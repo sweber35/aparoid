@@ -1,0 +1,13 @@
+{
+  "name": "slp-to-json-lambda",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sweber35/slp-to-json-lambda.git"
+  },
+  "private": true,
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.826.0",
+    "@slippi/slippi-js": "^7.0.0"
+  }
+}
