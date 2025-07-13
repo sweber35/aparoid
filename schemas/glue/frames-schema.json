@@ -1,0 +1,237 @@
+{
+  "name": "frames",
+  "description": "Frame-by-frame data from SLP replay files",
+  "columns": [
+    {
+      "name": "match_id",
+      "type": "string",
+      "comment": "Unique identifier for the match"
+    },
+    {
+      "name": "player_id",
+      "type": "string",
+      "comment": "Player identifier"
+    },
+    {
+      "name": "player_index",
+      "type": "tinyint",
+      "comment": "Player index in the match"
+    },
+    {
+      "name": "frame_number",
+      "type": "int",
+      "comment": "Frame number in the match"
+    },
+    {
+      "name": "char_id",
+      "type": "tinyint",
+      "comment": "Character ID"
+    },
+    {
+      "name": "follower",
+      "type": "boolean",
+      "comment": "Whether this is a follower character"
+    },
+    {
+      "name": "seed",
+      "type": "int",
+      "comment": "Random seed"
+    },
+    {
+      "name": "ucf_x",
+      "type": "smallint",
+      "comment": "UCF X value"
+    },
+    {
+      "name": "stocks",
+      "type": "tinyint",
+      "comment": "Number of stocks remaining"
+    },
+    {
+      "name": "alive",
+      "type": "boolean",
+      "comment": "Whether the player is alive"
+    },
+    {
+      "name": "anim_index",
+      "type": "int",
+      "comment": "Animation index"
+    },
+    {
+      "name": "pos_x_pre",
+      "type": "float",
+      "comment": "X position before frame"
+    },
+    {
+      "name": "pos_y_pre",
+      "type": "float",
+      "comment": "Y position before frame"
+    },
+    {
+      "name": "pos_x_post",
+      "type": "float",
+      "comment": "X position after frame"
+    },
+    {
+      "name": "pos_y_post",
+      "type": "float",
+      "comment": "Y position after frame"
+    },
+    {
+      "name": "joy_x",
+      "type": "float",
+      "comment": "Joystick X value"
+    },
+    {
+      "name": "joy_y",
+      "type": "float",
+      "comment": "Joystick Y value"
+    },
+    {
+      "name": "c_x",
+      "type": "float",
+      "comment": "C-stick X value"
+    },
+    {
+      "name": "c_y",
+      "type": "float",
+      "comment": "C-stick Y value"
+    },
+    {
+      "name": "trigger",
+      "type": "float",
+      "comment": "Trigger value"
+    },
+    {
+      "name": "buttons",
+      "type": "smallint",
+      "comment": "Button presses"
+    },
+    {
+      "name": "phys_l",
+      "type": "float",
+      "comment": "Left shoulder button"
+    },
+    {
+      "name": "phys_r",
+      "type": "float",
+      "comment": "Right shoulder button"
+    },
+    {
+      "name": "shield",
+      "type": "float",
+      "comment": "Shield value"
+    },
+    {
+      "name": "hit_with",
+      "type": "tinyint",
+      "comment": "What the player was hit with"
+    },
+    {
+      "name": "combo",
+      "type": "tinyint",
+      "comment": "Combo counter"
+    },
+    {
+      "name": "hurt_by",
+      "type": "tinyint",
+      "comment": "Who the player was hurt by"
+    },
+    {
+      "name": "percent_pre",
+      "type": "float",
+      "comment": "Damage percentage before frame"
+    },
+    {
+      "name": "percent_post",
+      "type": "float",
+      "comment": "Damage percentage after frame"
+    },
+    {
+      "name": "action_pre",
+      "type": "smallint",
+      "comment": "Action state before frame"
+    },
+    {
+      "name": "action_post",
+      "type": "smallint",
+      "comment": "Action state after frame"
+    },
+    {
+      "name": "action_fc",
+      "type": "float",
+      "comment": "Action frame counter"
+    },
+    {
+      "name": "face_dir_pre",
+      "type": "float",
+      "comment": "Facing direction before frame"
+    },
+    {
+      "name": "face_dir_post",
+      "type": "float",
+      "comment": "Facing direction after frame"
+    },
+    {
+      "name": "hitstun",
+      "type": "float",
+      "comment": "Hitstun remaining"
+    },
+    {
+      "name": "airborne",
+      "type": "boolean",
+      "comment": "Whether the player is airborne"
+    },
+    {
+      "name": "ground_id",
+      "type": "int",
+      "comment": "Ground collision ID"
+    },
+    {
+      "name": "jumps",
+      "type": "tinyint",
+      "comment": "Number of jumps remaining"
+    },
+    {
+      "name": "l_cancel",
+      "type": "tinyint",
+      "comment": "L-cancel status"
+    },
+    {
+      "name": "hurtbox",
+      "type": "tinyint",
+      "comment": "Hurtbox state"
+    },
+    {
+      "name": "hitlag",
+      "type": "float",
+      "comment": "Hitlag remaining"
+    },
+    {
+      "name": "self_air_x",
+      "type": "float",
+      "comment": "Self aerial X position"
+    },
+    {
+      "name": "self_air_y",
+      "type": "float",
+      "comment": "Self aerial Y position"
+    },
+    {
+      "name": "attack_x",
+      "type": "float",
+      "comment": "Attack X position"
+    },
+    {
+      "name": "attack_y",
+      "type": "float",
+      "comment": "Attack Y position"
+    },
+    {
+      "name": "self_grd_x",
+      "type": "float",
+      "comment": "Self ground X position"
+    }
+  ],
+  "partitionKeys": []
+}

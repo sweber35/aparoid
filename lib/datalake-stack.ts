@@ -23,25 +23,25 @@ export class DatalakeStack extends cdk.Stack {
     });
 
 
-    // // Glue database (for processed SLP data)
-    // const glueDb = new glue.CfnDatabase(this, 'aparoid-replay-data-db', {
-    //   catalogId: this.account,
-    //   databaseInput: {
-    //     name: 'replay-data-db',
-    //     description: 'Database for processed SLP data',
-    //   },
-    // });
+    // Glue database (for processed SLP data)
+    const glueDb = new glue.CfnDatabase(this, 'aparoid-replay-data-db', {
+      catalogId: this.account,
+      databaseInput: {
+        name: 'replay-data-db',
+        description: 'Database for processed SLP data',
+      },
+    });
 
-    // const framesSchema = loadGlueSchema('schemas/glue/frames-schema.json');
-    // const framesTable = createGlueTableWithLocation(
-    //   this,
-    //   'frames-table',
-    //   framesSchema,
-    //   glueDb.ref,
-    //   processedSlpDataBucket.bucketArn,
-    //   'frames'
-    // );
-    // framesTable.addDependency(glueDb);
+    const framesSchema = loadGlueSchema('schemas/glue/frames-schema.json');
+    const framesTable = createGlueTableWithLocation(
+      this,
+      'frames-table',
+      framesSchema,
+      glueDb.ref,
+      `s3://${processedSlpDataBucket.bucketName}`,
+      'frames'
+    );
+    framesTable.addDependency(glueDb);
 
     // Lambda layer for slippc binary
     const slippcLayer = new lambda.LayerVersion(this, 'SlippcLayer', {

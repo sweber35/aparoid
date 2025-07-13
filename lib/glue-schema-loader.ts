@@ -5,26 +5,12 @@ import * as glue from 'aws-cdk-lib/aws-glue';
 export interface GlueTableSchema {
   name: string;
   description: string;
-  tableType: string;
-  parameters?: { [key: string]: string };
-  storageDescriptor: {
-    columns: Array<{
-      name: string;
-      type: string;
-      comment?: string;
-    }>;
-    inputFormat: string;
-    outputFormat: string;
-    serdeInfo: {
-      serializationLibrary: string;
-      parameters?: { [key: string]: string };
-    };
-    bucketColumns?: string[];
-    sortColumns?: Array<{ column: string; sortOrder: number }>;
-    parameters?: { [key: string]: string };
-  };
+  columns: Array<{
+    name: string;
+    type: string;
+    comment?: string;
+  }>;
   partitionKeys?: Array<{ name: string; type: string; comment?: string }>;
-  tableParameters?: { [key: string]: string };
 }
 
 export function loadGlueSchema(schemaPath: string): GlueTableSchema {
@@ -38,27 +24,35 @@ export function createGlueTableFromSchema(
   id: string,
   schema: GlueTableSchema,
   databaseName: string,
-  bucketArn: string
+  bucketLocation: string
 ): glue.CfnTable {
   const tableInput: any = {
     name: schema.name,
     description: schema.description,
-    tableType: schema.tableType,
-    parameters: schema.parameters,
+    tableType: 'EXTERNAL_TABLE',
+    parameters: {
+      classification: 'parquet'
+    },
     storageDescriptor: {
-      ...schema.storageDescriptor,
-      location: bucketArn, // This will be overridden with specific paths
-      bucketColumns: schema.storageDescriptor.bucketColumns || [],
-      sortColumns: schema.storageDescriptor.sortColumns || [],
-      parameters: schema.storageDescriptor.parameters || {},
+      columns: schema.columns,
+      location: bucketLocation, // This will be overridden with specific paths
+      inputFormat: 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat',
+      outputFormat: 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat',
+      serdeInfo: {
+        serializationLibrary: 'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe',
+        parameters: {
+          'serialization.format': '1'
+        }
+      },
+      bucketColumns: [],
+      sortColumns: [],
+      parameters: {},
     },
     partitionKeys: schema.partitionKeys || [],
+    tableParameters: {
+      EXTERNAL: 'TRUE'
+    }
   };
-  
-  // Add tableParameters if it exists
-  if (schema.tableParameters) {
-    tableInput.tableParameters = schema.tableParameters;
-  }
   
   return new glue.CfnTable(scope, id, {
     catalogId: scope.account,
@@ -72,28 +66,36 @@ export function createGlueTableWithLocation(
   id: string,
   schema: GlueTableSchema,
   databaseName: string,
-  bucketArn: string,
+  bucketLocation: string,
   tablePath: string
 ): glue.CfnTable {
   const tableInput: any = {
     name: schema.name,
     description: schema.description,
-    tableType: schema.tableType,
-    parameters: schema.parameters,
+    tableType: 'EXTERNAL_TABLE',
+    parameters: {
+      classification: 'parquet'
+    },
     storageDescriptor: {
-      ...schema.storageDescriptor,
-      location: `${bucketArn}/${tablePath}`,
-      bucketColumns: schema.storageDescriptor.bucketColumns || [],
-      sortColumns: schema.storageDescriptor.sortColumns || [],
-      parameters: schema.storageDescriptor.parameters || {},
+      columns: schema.columns,
+      location: `${bucketLocation}/${tablePath}`,
+      inputFormat: 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat',
+      outputFormat: 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat',
+      serdeInfo: {
+        serializationLibrary: 'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe',
+        parameters: {
+          'serialization.format': '1'
+        }
+      },
+      bucketColumns: [],
+      sortColumns: [],
+      parameters: {},
     },
     partitionKeys: schema.partitionKeys || [],
+    tableParameters: {
+      EXTERNAL: 'TRUE'
+    }
   };
-  
-  // Add tableParameters if it exists
-  if (schema.tableParameters) {
-    tableInput.tableParameters = schema.tableParameters;
-  }
   
   return new glue.CfnTable(scope, id, {
     catalogId: scope.account,
