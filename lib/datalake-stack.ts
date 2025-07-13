@@ -6,6 +6,8 @@ import * as s3n from 'aws-cdk-lib/aws-s3-notifications';
 import * as glue from 'aws-cdk-lib/aws-glue';
 import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as cr from 'aws-cdk-lib/custom-resources';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import { loadGlueSchema, createGlueTableWithLocation } from './glue-schema-loader';
 
 export class DatalakeStack extends cdk.Stack {
@@ -45,6 +47,10 @@ export class DatalakeStack extends cdk.Stack {
       databaseInput: {
         name: 'replay-data-db',
         description: 'Database for processed SLP data',
+        parameters: {
+          'hive.metastore.database.owner': 'hadoop',
+          'hive.metastore.database.owner-type': 'USER'
+        }
       },
     });
 
@@ -117,14 +123,91 @@ export class DatalakeStack extends cdk.Stack {
     );
     lookupTable.addDependency(glueDb);
 
-    // Lambda layer for slippc binary
+    // Lambda function to create Glue views
+    const createViewsLambda = new lambda.Function(this, 'create-glue-views-lambda', {
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset('lambda/create-glue-views'),
+      environment: {
+        GLUE_DATABASE_NAME: glueDb.ref,
+        REGION: this.region,
+      },
+      timeout: cdk.Duration.minutes(5),
+      memorySize: 512,
+    });
+
+    // Grant Lambda permissions to create Glue views
+    createViewsLambda.addToRolePolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'glue:CreateTable',
+        'glue:DeleteTable',
+        'glue:GetTable',
+        'glue:GetTables',
+        'glue:UpdateTable',
+        'glue:BatchCreatePartition',
+        'glue:BatchDeletePartition',
+        'glue:BatchGetPartition',
+        'glue:GetPartition',
+        'glue:GetPartitions',
+        'glue:UpdatePartition',
+        'glue:DeletePartition',
+        'glue:CreatePartition',
+        'glue:GetDatabase',
+        'glue:GetDatabases',
+        'glue:CreateDatabase',
+        'glue:UpdateDatabase',
+      ],
+      resources: [
+        `arn:aws:glue:${this.region}:${this.account}:catalog`,
+        `arn:aws:glue:${this.region}:${this.account}:database/${glueDb.ref}`,
+        `arn:aws:glue:${this.region}:${this.account}:table/${glueDb.ref}/*`,
+      ],
+    }));
+
+    // Custom resource to trigger view creation after all tables are created
+    const createViewsResource = new cr.AwsCustomResource(this, 'CreateGlueViews', {
+      onCreate: {
+        service: 'Lambda',
+        action: 'invoke',
+        parameters: {
+          FunctionName: createViewsLambda.functionName,
+          InvocationType: 'RequestResponse',
+        },
+        physicalResourceId: cr.PhysicalResourceId.of('GlueViewsCreation'),
+      },
+      onUpdate: {
+        service: 'Lambda',
+        action: 'invoke',
+        parameters: {
+          FunctionName: createViewsLambda.functionName,
+          InvocationType: 'RequestResponse',
+        },
+        physicalResourceId: cr.PhysicalResourceId.of('GlueViewsCreation'),
+      },
+      policy: cr.AwsCustomResourcePolicy.fromStatements([
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['lambda:InvokeFunction'],
+          resources: [createViewsLambda.functionArn],
+        }),
+      ]),
+    });
+
+    // Ensure views are created after all tables
+    createViewsResource.node.addDependency(framesTable);
+    createViewsResource.node.addDependency(itemsTable);
+    createViewsResource.node.addDependency(platformsTable);
+    createViewsResource.node.addDependency(matchSettingsTable);
+    createViewsResource.node.addDependency(playerSettingsTable);
+    createViewsResource.node.addDependency(lookupTable);
+
     const slippcLayer = new lambda.LayerVersion(this, 'SlippcLayer', {
       code: lambda.Code.fromAsset('lambda-layers/slippc-layer'),
       compatibleRuntimes: [lambda.Runtime.NODEJS_18_X],
       description: 'Layer containing slippc binary for SLP file parsing',
     });
 
-    // Lambda function: slp-to-parquet
     const slpToParquetLambda = new lambda.Function(this, 'slp-to-parquet-lambda', {
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
@@ -139,7 +222,7 @@ export class DatalakeStack extends cdk.Stack {
       timeout: cdk.Duration.minutes(1),
       memorySize: 256,
     });
-    // Grant Lambda access to S3 buckets
+
     slpReplayBucket.grantRead(slpToParquetLambda);
     processedSlpDataBucket.grantWrite(slpToParquetLambda);
 
