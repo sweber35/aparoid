@@ -5,8 +5,8 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as s3n from 'aws-cdk-lib/aws-s3-notifications';
 import * as glue from 'aws-cdk-lib/aws-glue';
 import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import { loadGlueSchema, createGlueTableWithLocation } from './glue-schema-loader';
-import { lookup } from 'dns';
 
 export class DatalakeStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -29,6 +29,14 @@ export class DatalakeStack extends cdk.Stack {
       sources: [s3deploy.Source.asset('lookup-data')],
       destinationBucket: processedSlpDataBucket,
       destinationKeyPrefix: 'lookup',
+    });
+
+    new dynamodb.Table(this, 'replay-tags-table', {
+      tableName: 'replay-tags',
+      partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT for production!
     });
 
     // Glue database (for processed SLP data)
@@ -125,8 +133,8 @@ export class DatalakeStack extends cdk.Stack {
       environment: {
         SLIPPI_CODE: process.env.SLIPPI_CODE || '',
         SLIPPI_USER_ID: process.env.SLIPPI_USER_ID || '',
-        DEPLOYMENT_REGION: this.region, // Pass the deployment region to Lambda
-        PROCESSED_DATA_BUCKET: processedSlpDataBucket.bucketName, // Pass the destination bucket name
+        DEPLOYMENT_REGION: this.region,
+        PROCESSED_DATA_BUCKET: processedSlpDataBucket.bucketName,
       },
       timeout: cdk.Duration.minutes(1),
       memorySize: 256,
