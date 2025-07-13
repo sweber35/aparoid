@@ -1,0 +1,37 @@
+{
+  "name": "player-settings",
+  "description": "Match settings data from SLP replay files",
+  "columns": [
+    {
+      "name": "match_id",
+      "type": "string",
+      "comment": "Unique identifier for the match"
+    },
+    {
+      "name": "port",
+      "type": "int",
+      "comment": "Controller port number of player"
+    },
+    {
+      "name": "slippi_code",
+      "type": "string",
+      "comment": "Slippi connect code"
+    },
+    {
+      "name": "player_tag",
+      "type": "string",
+      "comment": "In-game player tag"
+    },
+    {
+      "name": "player_index",
+      "type": "int",
+      "comment": "0-indexed based on port number"
+    },
+    {
+      "name": "ext_chart",
+      "type": "int",
+      "comment": "External character ID of player"
+    }
+  ],
+  "partitionKeys": []
+}

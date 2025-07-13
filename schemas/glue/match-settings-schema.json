@@ -1,0 +1,47 @@
+{
+  "name": "match-settings",
+  "description": "Match settings data from SLP replay files",
+  "columns": [
+    {
+      "name": "match_id",
+      "type": "string",
+      "comment": "Unique identifier for the match"
+    },
+    {
+      "name": "slp_file_name",
+      "type": "string",
+      "comment": "Original SLP file name"
+    },
+    {
+      "name": "slippi_version",
+      "type": "string",
+      "comment": "Slippi version used"
+    },
+    {
+      "name": "timer",
+      "type": "int",
+      "comment": "Match timer value"
+    },
+    {
+      "name": "frame_count",
+      "type": "int",
+      "comment": "Total frame count"
+    },
+    {
+      "name": "winner_id",
+      "type": "int",
+      "comment": "Winner player ID"
+    },
+    {
+      "name": "stage",
+      "type": "int",
+      "comment": "Stage ID"
+    },
+    {
+      "name": "end_type",
+      "type": "int",
+      "comment": "How the match ended"
+    }
+  ],
+  "partitionKeys": []
+}

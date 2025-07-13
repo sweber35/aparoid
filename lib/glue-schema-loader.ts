@@ -24,35 +24,10 @@ export function createGlueTableFromSchema(
   id: string,
   schema: GlueTableSchema,
   databaseName: string,
-  bucketLocation: string
+  bucketLocation: string,
+  format: 'parquet' | 'json' = 'parquet'
 ): glue.CfnTable {
-  const tableInput: any = {
-    name: schema.name,
-    description: schema.description,
-    tableType: 'EXTERNAL_TABLE',
-    parameters: {
-      classification: 'parquet'
-    },
-    storageDescriptor: {
-      columns: schema.columns,
-      location: bucketLocation, // This will be overridden with specific paths
-      inputFormat: 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat',
-      outputFormat: 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat',
-      serdeInfo: {
-        serializationLibrary: 'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe',
-        parameters: {
-          'serialization.format': '1'
-        }
-      },
-      bucketColumns: [],
-      sortColumns: [],
-      parameters: {},
-    },
-    partitionKeys: schema.partitionKeys || [],
-    tableParameters: {
-      EXTERNAL: 'TRUE'
-    }
-  };
+  const tableInput = createTableInput(schema, bucketLocation, format);
   
   return new glue.CfnTable(scope, id, {
     catalogId: scope.account,
@@ -67,26 +42,26 @@ export function createGlueTableWithLocation(
   schema: GlueTableSchema,
   databaseName: string,
   bucketLocation: string,
-  tablePath: string
+  tablePath: string,
+  format: 'parquet' | 'json' = 'parquet'
 ): glue.CfnTable {
-  const tableInput: any = {
+  const tableInput = createTableInput(schema, `${bucketLocation}/${tablePath}`, format);
+  
+  return new glue.CfnTable(scope, id, {
+    catalogId: scope.account,
+    databaseName: databaseName,
+    tableInput: tableInput,
+  });
+}
+
+function createTableInput(schema: GlueTableSchema, location: string, format: 'parquet' | 'json'): any {
+  const baseTableInput = {
     name: schema.name,
     description: schema.description,
     tableType: 'EXTERNAL_TABLE',
-    parameters: {
-      classification: 'parquet'
-    },
     storageDescriptor: {
       columns: schema.columns,
-      location: `${bucketLocation}/${tablePath}`,
-      inputFormat: 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat',
-      outputFormat: 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat',
-      serdeInfo: {
-        serializationLibrary: 'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe',
-        parameters: {
-          'serialization.format': '1'
-        }
-      },
+      location: location,
       bucketColumns: [],
       sortColumns: [],
       parameters: {},
@@ -96,10 +71,44 @@ export function createGlueTableWithLocation(
       EXTERNAL: 'TRUE'
     }
   };
-  
-  return new glue.CfnTable(scope, id, {
-    catalogId: scope.account,
-    databaseName: databaseName,
-    tableInput: tableInput,
-  });
+
+  if (format === 'parquet') {
+    return {
+      ...baseTableInput,
+      parameters: {
+        classification: 'parquet'
+      },
+      storageDescriptor: {
+        ...baseTableInput.storageDescriptor,
+        inputFormat: 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat',
+        outputFormat: 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat',
+        serdeInfo: {
+          serializationLibrary: 'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe',
+          parameters: {
+            'serialization.format': '1'
+          }
+        }
+      }
+    };
+  } else if (format === 'json') {
+    return {
+      ...baseTableInput,
+      parameters: {
+        classification: 'json'
+      },
+      storageDescriptor: {
+        ...baseTableInput.storageDescriptor,
+        inputFormat: 'org.apache.hadoop.mapred.TextInputFormat',
+        outputFormat: 'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat',
+        serdeInfo: {
+          serializationLibrary: 'org.openx.data.jsonserde.JsonSerDe',
+          parameters: {
+            'serialization.format': '1'
+          }
+        }
+      }
+    };
+  }
+
+  throw new Error(`Unsupported format: ${format}. Supported formats are 'parquet' and 'json'`);
 } 

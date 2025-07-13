@@ -54,7 +54,7 @@ export class DatalakeStack extends cdk.Stack {
     );
     itemsTable.addDependency(glueDb);
 
-    const platformsSchema = loadGlueSchema('schemas/glue/items-schema.json');
+    const platformsSchema = loadGlueSchema('schemas/glue/platforms-schema.json');
     const platformsTable = createGlueTableWithLocation(
       this,
       'platforms-table',
@@ -64,6 +64,30 @@ export class DatalakeStack extends cdk.Stack {
       'platforms'
     );
     platformsTable.addDependency(glueDb);
+
+    const matchSettingsSchema = loadGlueSchema('schemas/glue/match-settings-schema.json');
+    const matchSettingsTable = createGlueTableWithLocation(
+      this,
+      'match-settings-table',
+      matchSettingsSchema,
+      glueDb.ref,
+      `s3://${processedSlpDataBucket.bucketName}`,
+      'match-settings',
+      'json'
+    );
+    matchSettingsTable.addDependency(glueDb);
+
+    const playerSettingsSchema = loadGlueSchema('schemas/glue/player-settings-schema.json');
+    const playerSettingsTable = createGlueTableWithLocation(
+      this,
+      'player-settings-table',
+      playerSettingsSchema,
+      glueDb.ref,
+      `s3://${processedSlpDataBucket.bucketName}`,
+      'player-settings',
+      'json'
+    );
+    playerSettingsTable.addDependency(glueDb);
 
     // Lambda layer for slippc binary
     const slippcLayer = new lambda.LayerVersion(this, 'SlippcLayer', {
@@ -91,13 +115,9 @@ export class DatalakeStack extends cdk.Stack {
     slpReplayBucket.grantRead(slpToParquetLambda);
     processedSlpDataBucket.grantWrite(slpToParquetLambda);
 
-    // S3 event notification to Lambda - only for objects in /slp folder
     slpReplayBucket.addEventNotification(
       s3.EventType.OBJECT_CREATED,
-      new s3n.LambdaDestination(slpToParquetLambda),
-      {
-        prefix: 'slp/'  // Only trigger for objects in the /slp folder
-      }
+      new s3n.LambdaDestination(slpToParquetLambda)
     );
   }
 }

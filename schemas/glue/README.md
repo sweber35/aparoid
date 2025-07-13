@@ -23,8 +23,9 @@ Each schema file should follow this simplified structure:
 
 ## Common Configuration
 
-The following configuration is automatically applied to all tables by the CDK functions:
+The following configuration is automatically applied to all tables by the CDK functions based on the format:
 
+### Parquet Tables (default)
 - **Table Type**: `EXTERNAL_TABLE`
 - **Classification**: `parquet`
 - **Input Format**: `org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat`
@@ -32,16 +33,54 @@ The following configuration is automatically applied to all tables by the CDK fu
 - **Serialization Library**: `org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe`
 - **Table Parameters**: `EXTERNAL: TRUE`
 
+### JSON Tables
+- **Table Type**: `EXTERNAL_TABLE`
+- **Classification**: `json`
+- **Input Format**: `org.apache.hadoop.mapred.TextInputFormat`
+- **Output Format**: `org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat`
+- **Serialization Library**: `org.openx.data.jsonserde.JsonSerDe`
+- **Table Parameters**: `EXTERNAL: TRUE`
+
+## Usage in CDK
+
+### Parquet Tables (default)
+```typescript
+const table = createGlueTableWithLocation(
+  scope,
+  'table-id',
+  schema,
+  databaseName,
+  bucketLocation,
+  'table-path'
+  // format parameter defaults to 'parquet'
+);
+```
+
+### JSON Tables
+```typescript
+const table = createGlueTableWithLocation(
+  scope,
+  'table-id',
+  schema,
+  databaseName,
+  bucketLocation,
+  'table-path',
+  'json'  // specify format
+);
+```
+
 ## Adding New Schemas
 
 1. Create a new JSON file in this directory (e.g., `my-table-schema.json`)
 2. Follow the simplified structure above
 3. Update the CDK stack to load the new schema file
-4. Deploy the stack
+4. Specify the format if not using Parquet (default)
+5. Deploy the stack
 
 ## Current Schemas
 
-- `frames-schema.json` - Frame-by-frame data from SLP replay files
+- `frames-schema.json` - Frame-by-frame player data from SLP replay files (Parquet)
+- `items-schema.json` - Frame-by-frame item data from SLP replay files (Parquet)
 
 ## Data Types
 
@@ -63,4 +102,5 @@ Common Glue data types:
 - Use descriptive column names and comments
 - Consider partitioning for large tables
 - Use appropriate data types for your data
-- Keep schemas version controlled 
+- Keep schemas version controlled
+- Choose the right format: Parquet for analytical queries, JSON for flexible schemas 
