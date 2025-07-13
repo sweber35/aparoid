@@ -43,6 +43,28 @@ export class DatalakeStack extends cdk.Stack {
     );
     framesTable.addDependency(glueDb);
 
+    const itemsSchema = loadGlueSchema('schemas/glue/items-schema.json');
+    const itemsTable = createGlueTableWithLocation(
+      this,
+      'items-table',
+      itemsSchema,
+      glueDb.ref,
+      `s3://${processedSlpDataBucket.bucketName}`,
+      'items'
+    );
+    itemsTable.addDependency(glueDb);
+
+    const platformsSchema = loadGlueSchema('schemas/glue/items-schema.json');
+    const platformsTable = createGlueTableWithLocation(
+      this,
+      'platforms-table',
+      platformsSchema,
+      glueDb.ref,
+      `s3://${processedSlpDataBucket.bucketName}`,
+      'platforms'
+    );
+    platformsTable.addDependency(glueDb);
+
     // Lambda layer for slippc binary
     const slippcLayer = new lambda.LayerVersion(this, 'SlippcLayer', {
       code: lambda.Code.fromAsset('lambda-layers/slippc-layer'),

@@ -1,6 +1,6 @@
 {
   "name": "frames",
-  "description": "Frame-by-frame data from SLP replay files",
+  "description": "Frame-by-frame player data from SLP replay files",
   "columns": [
     {
       "name": "match_id",

@@ -1,0 +1,92 @@
+{
+  "name": "items",
+  "description": "Frame-by-frame item data from SLP replay files",
+  "columns": [
+    {
+      "name": "match_id",
+      "type": "string",
+      "comment": "Unique identifier for the match"
+    },
+    {
+      "name": "spawn_id",
+      "type": "int",
+      "comment": "Item identifier"
+    },
+    {
+      "name": "item_type",
+      "type": "smallint",
+      "comment": "Item type"
+    },
+    {
+      "name": "frame",
+      "type": "int",
+      "comment": "Frame number in the match"
+    },
+    {
+      "name": "state",
+      "type": "tinyint",
+      "comment": "Item state"
+    },
+    {
+      "name": "face_dir",
+      "type": "float",
+      "comment": "Facing direction"
+    },
+    {
+      "name": "xvel",
+      "type": "float",
+      "comment": "X velocity"
+    },
+    {
+      "name": "yvel",
+      "type": "float",
+      "comment": "Y velocity"
+    },
+    {
+      "name": "xpos",
+      "type": "float",
+      "comment": "X position"
+    },
+    {
+      "name": "ypos",
+      "type": "float",
+      "comment": "Y position"
+    },
+    {
+      "name": "damage",
+      "type": "smallint",
+      "comment": "Damage dealt"
+    },
+    {
+      "name": "expire",
+      "type": "float",
+      "comment": "Expire time in frames"
+    },
+    {
+      "name": "missile_type",
+      "type": "smallint",
+      "comment": "Samus missile type (standard or super)"
+    },
+    {
+      "name": "turnip_face",
+      "type": "smallint",
+      "comment": "Peach turnip face type"
+    },
+    {
+      "name": "is_launched",
+      "type": "smallint",
+      "comment": "Whether charged shot (Samus/Mewtwo) is launched"
+    },
+    {
+      "name": "charged_power",
+      "type": "smallint",
+      "comment": "Amount of charge (Samus/Mewtwo)"
+    },
+    {
+      "name": "owner",
+      "type": "smallint",
+      "comment": "Owner of the item"
+    }
+  ],
+  "partitionKeys": []
+}
