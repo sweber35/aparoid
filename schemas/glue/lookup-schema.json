@@ -1,0 +1,17 @@
+{
+  "name": "lookup",
+  "description": "Action ID to action name mapping",
+  "columns": [
+    {
+      "name": "action_post",
+      "type": "int",
+      "comment": "Action ID"
+    },
+    {
+      "name": "action_name",
+      "type": "string",
+      "comment": "Action name"
+    }
+  ],
+  "partitionKeys": []
+}

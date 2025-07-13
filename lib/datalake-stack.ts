@@ -4,7 +4,9 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as s3n from 'aws-cdk-lib/aws-s3-notifications';
 import * as glue from 'aws-cdk-lib/aws-glue';
+import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import { loadGlueSchema, createGlueTableWithLocation } from './glue-schema-loader';
+import { lookup } from 'dns';
 
 export class DatalakeStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -22,6 +24,12 @@ export class DatalakeStack extends cdk.Stack {
       autoDeleteObjects: true,
     });
 
+    // Auto-populate processed data bucket with lookup data
+    new s3deploy.BucketDeployment(this, 'DeployLookupData', {
+      sources: [s3deploy.Source.asset('lookup-data')],
+      destinationBucket: processedSlpDataBucket,
+      destinationKeyPrefix: 'lookup',
+    });
 
     // Glue database (for processed SLP data)
     const glueDb = new glue.CfnDatabase(this, 'aparoid-replay-data-db', {
@@ -88,6 +96,18 @@ export class DatalakeStack extends cdk.Stack {
       'json'
     );
     playerSettingsTable.addDependency(glueDb);
+
+    const lookupSchema = loadGlueSchema('schemas/glue/lookup-schema.json');
+    const lookupTable = createGlueTableWithLocation(
+      this,
+      'lookup-table',
+      lookupSchema,
+      glueDb.ref,
+      `s3://${processedSlpDataBucket.bucketName}`,
+      'lookup',
+      'json'
+    );
+    lookupTable.addDependency(glueDb);
 
     // Lambda layer for slippc binary
     const slippcLayer = new lambda.LayerVersion(this, 'SlippcLayer', {
