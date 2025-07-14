@@ -6,6 +6,7 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 
 export interface ProcessingStackProps extends cdk.StackProps {
   slpReplayBucketName: string;
@@ -18,6 +19,7 @@ export interface ProcessingStackProps extends cdk.StackProps {
 export class ProcessingStack extends cdk.Stack {
   public readonly slpToParquetLambda: lambda.Function;
   public readonly replayStubLambda: lambda.Function;
+  public readonly replayStubApi: apigateway.RestApi;
   public readonly s3EventNotification: s3n.LambdaDestination;
 
   constructor(scope: Construct, id: string, props: ProcessingStackProps) {
@@ -100,6 +102,46 @@ export class ProcessingStack extends cdk.Stack {
       logGroup: replayStubLogGroup, // Use the explicit log group
     });
 
+    // API Gateway for Replay Stub Lambda
+    this.replayStubApi = new apigateway.RestApi(this, 'aparoid-replay-stub-api', {
+      restApiName: 'aparoid-replay-stub-api',
+      description: 'API Gateway for replay stub generation',
+      defaultCorsPreflightOptions: {
+        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowMethods: apigateway.Cors.ALL_METHODS,
+        allowHeaders: ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key'],
+      },
+    });
+
+    // Create Lambda integration
+    const replayStubIntegration = new apigateway.LambdaIntegration(this.replayStubLambda, {
+      requestTemplates: {
+        'application/json': '{ "statusCode": "200" }',
+      },
+    });
+
+    // Add POST route to root
+    this.replayStubApi.root.addMethod('POST', replayStubIntegration, {
+      methodResponses: [
+        {
+          statusCode: '200',
+          responseParameters: {
+            'method.response.header.Access-Control-Allow-Origin': true,
+            'method.response.header.Access-Control-Allow-Headers': true,
+            'method.response.header.Access-Control-Allow-Methods': true,
+          },
+        },
+        {
+          statusCode: '500',
+          responseParameters: {
+            'method.response.header.Access-Control-Allow-Origin': true,
+            'method.response.header.Access-Control-Allow-Headers': true,
+            'method.response.header.Access-Control-Allow-Methods': true,
+          },
+        },
+      ],
+    });
+
     // Grant permissions to the SLP to Parquet Lambda function
     slpReplayBucket.grantRead(this.slpToParquetLambda);
     processedSlpDataBucket.grantWrite(this.slpToParquetLambda);
@@ -173,6 +215,13 @@ export class ProcessingStack extends cdk.Stack {
       value: this.replayStubLambda.functionName,
       description: 'Name of the Lambda function for replay stub generation',
       exportName: `${this.stackName}-ReplayStubLambdaName`,
+    });
+
+    // Output the API Gateway URL
+    new cdk.CfnOutput(this, 'ReplayStubApiUrl', {
+      value: this.replayStubApi.url,
+      description: 'URL of the replay stub API Gateway',
+      exportName: `${this.stackName}-ReplayStubApiUrl`,
     });
   }
 } 

@@ -9,8 +9,7 @@
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk",
-    "datalake": "AWS_PROFILE=aparoid-dev npx cdk deploy StorageStack GlueStack ProcessingStack TestFilesStack --require-approval never",
-    "cleanup-logs": "AWS_PROFILE=aparoid-dev aws logs delete-log-group --log-group-name /aws/lambda/aparoid-slp-to-parquet && aws logs delete-log-group --log-group-name /aws/lambda/aparoid-create-glue-views",
+    "datalake": "AWS_PROFILE=aparoid-dev npx cdk deploy StorageStack GlueStack ProcessingStack TestFilesStack --require-approval never"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
