@@ -9,9 +9,10 @@ try {
 }
 
 import * as cdk from 'aws-cdk-lib';
-import { AparoidStack } from '../lib/aparoid-stack';
-import { DatalakeStack } from '../lib/datalake-stack';
-import { FrontendStack } from '../lib/frontend-stack';
+import { StorageStack } from '../lib/storage-stack';
+import { GlueStack } from '../lib/glue-stack';
+import { ProcessingStack } from '../lib/processing-stack';
+import { TestFilesStack } from '../lib/test-files-stack';
 
 const app = new cdk.App();
 
@@ -28,33 +29,34 @@ console.log(`  CDK_DEFAULT_REGION: ${process.env.CDK_DEFAULT_REGION || 'NOT SET'
 console.log(`  AWS_REGION: ${process.env.AWS_REGION || 'NOT SET'}`);
 console.log(`  AWS_PROFILE: ${process.env.AWS_PROFILE || 'NOT SET'}`);
 
-console.log(`🎯 Deploying to Account: ${targetAccount}, Region: ${targetRegion}`);
-
 // Validate that we have the required environment variables
 if (!targetAccount) {
   throw new Error('AWS_ACCOUNT_ID or CDK_DEFAULT_ACCOUNT environment variable is required');
 }
 
-new AparoidStack(app, 'AparoidStack', {
-  /* If you don't specify 'env', this stack will be environment-agnostic.
-   * Account/Region-dependent features and context lookups will not work,
-   * but a single synthesized template can be deployed anywhere. */
+const env = { account: targetAccount, region: targetRegion };
 
-  /* Uncomment the next line to specialize this stack for the AWS Account
-   * and Region that are implied by the current CLI configuration. */
-  // env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
+// Create the datalake stacks
+const storageStack = new StorageStack(app, 'StorageStack', { env });
 
-  /* Uncomment the next line if you know exactly what Account and Region you
-   * want to deploy the stack to. */
-  env: { account: targetAccount, region: targetRegion },
-
-  /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
+const glueStack = new GlueStack(app, 'GlueStack', {
+  env,
+  processedDataBucketName: storageStack.processedSlpDataBucket.bucketName,
 });
 
-new DatalakeStack(app, 'DatalakeStack', {
-  env: { account: targetAccount, region: targetRegion },
+const processingStack = new ProcessingStack(app, 'ProcessingStack', {
+  env,
+  slpReplayBucketName: storageStack.slpReplayBucket.bucketName,
+  processedDataBucketName: storageStack.processedSlpDataBucket.bucketName,
 });
 
-new FrontendStack(app, 'FrontendStack', {
-  env: { account: targetAccount, region: targetRegion },
+// Create test files stack that depends on processing stack
+const testFilesStack = new TestFilesStack(app, 'TestFilesStack', {
+  env,
+  slpReplayBucketName: storageStack.slpReplayBucket.bucketName,
 });
+
+// Add dependencies to ensure proper deployment order
+glueStack.addDependency(storageStack);
+processingStack.addDependency(storageStack);
+testFilesStack.addDependency(processingStack);

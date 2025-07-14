@@ -31,11 +31,40 @@ Before deploying, configure your AWS environment:
 * `npm run build`   compile typescript to js
 * `npm run watch`   watch for changes and compile
 * `npm run test`    perform the jest unit tests
-* `npx cdk deploy`  deploy this stack to your default AWS account/region
-* `npx cdk diff`    compare deployed stack with current state
 * `npx cdk synth`   emits the synthesized CloudFormation template
+
+### Deployment Commands
+
+* `npx cdk deploy --all`  deploy all stacks to your default AWS account/region
+* `npx cdk deploy StorageStack`  deploy only the storage stack
+* `npx cdk deploy GlueStack`  deploy only the Glue stack (requires StorageStack)
+* `npx cdk deploy ProcessingStack`  deploy only the processing stack (requires StorageStack)
+* `npx cdk diff`  compare deployed stack with current state
+* `npx cdk destroy --all`  destroy all stacks (use with caution!)
 
 ## Stacks
 
-- **DatalakeStack**: S3 buckets, Lambda function with slippc layer, and S3 event notifications
-- **FrontendStack**: Lambda functions and DynamoDB table for frontend services
+### Core Stacks
+- **AparoidStack**: Main application stack
+
+### Data Lake Stacks (Sub-stacks)
+- **StorageStack**: S3 buckets for raw SLP files and processed data, DynamoDB tables, plus lookup data deployment
+- **GlueStack**: AWS Glue database, tables, and views for data analytics
+- **ProcessingStack**: Lambda functions and processing logic for SLP file conversion
+- **TestFilesStack**: Deploys test SLP files to the existing replays bucket
+
+### Resource Naming Convention
+All resources follow a consistent naming pattern: `aparoid-{resource-type}-{region}` or `aparoid-{resource-type}-{account}-{region}`
+
+Examples:
+- S3 Buckets: `aparoid-slp-replays-{account}-{region}`, `aparoid-processed-data-{account}-{region}`
+- Lambda Functions: `aparoid-slp-to-parquet-{region}`, `aparoid-create-glue-views-{region}`
+- DynamoDB Tables: `aparoid-replay-tags-{region}`
+- Glue Database: `aparoid-replay-data-{region}`
+
+### Deployment Order
+The stacks are deployed in the following order to ensure proper dependencies:
+1. StorageStack (creates S3 buckets and DynamoDB tables)
+2. GlueStack (depends on StorageStack for bucket names)
+3. ProcessingStack (depends on StorageStack for bucket names)
+4. TestFilesStack (deploys test SLP files AFTER processing infrastructure is ready)
