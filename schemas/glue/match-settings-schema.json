@@ -1,5 +1,5 @@
 {
-  "name": "match-settings",
+  "name": "match_settings",
   "description": "Match settings data from SLP replay files",
   "columns": [
     {

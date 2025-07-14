@@ -1,5 +1,5 @@
 {
-  "name": "player-settings",
+  "name": "player_settings",
   "description": "Match settings data from SLP replay files",
   "columns": [
     {
@@ -28,7 +28,7 @@
       "comment": "0-indexed based on port number"
     },
     {
-      "name": "ext_chart",
+      "name": "ext_char",
       "type": "int",
       "comment": "External character ID of player"
     }

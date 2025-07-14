@@ -222,6 +222,25 @@ export class ProcessingStack extends cdk.Stack {
     // Grant permissions to the Replay Stub Lambda function
     tagTable.grantReadData(this.replayStubLambda);
     
+    // Grant S3 permissions to the Replay Stub Lambda for Athena query results
+    processedSlpDataBucket.grantWrite(this.replayStubLambda);
+    
+    // Grant additional S3 permissions for Athena output location
+    this.replayStubLambda.addToRolePolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        's3:GetBucketLocation',
+        's3:ListBucket',
+        's3:GetObject',
+        's3:PutObject',
+        's3:DeleteObject',
+      ],
+      resources: [
+        `arn:aws:s3:::${props.processedDataBucketName}`,
+        `arn:aws:s3:::${props.processedDataBucketName}/*`,
+      ],
+    }));
+    
     // Grant permissions to the Replay Data Lambda function
     // Grant S3 permissions for cache bucket
     this.replayDataLambda.addToRolePolicy(new iam.PolicyStatement({
@@ -234,6 +253,25 @@ export class ProcessingStack extends cdk.Stack {
       resources: [
         'arn:aws:s3:::analyze-melee-replay-cache',
         'arn:aws:s3:::analyze-melee-replay-cache/*',
+      ],
+    }));
+    
+    // Grant S3 permissions to the Replay Data Lambda for Athena query results
+    processedSlpDataBucket.grantWrite(this.replayDataLambda);
+    
+    // Grant additional S3 permissions for Athena output location
+    this.replayDataLambda.addToRolePolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        's3:GetBucketLocation',
+        's3:ListBucket',
+        's3:GetObject',
+        's3:PutObject',
+        's3:DeleteObject',
+      ],
+      resources: [
+        `arn:aws:s3:::${props.processedDataBucketName}`,
+        `arn:aws:s3:::${props.processedDataBucketName}/*`,
       ],
     }));
     
