@@ -48,6 +48,9 @@ const processingStack = new ProcessingStack(app, 'ProcessingStack', {
   env,
   slpReplayBucketName: storageStack.slpReplayBucket.bucketName,
   processedDataBucketName: storageStack.processedSlpDataBucket.bucketName,
+  tagTableName: storageStack.replayTagsTable.tableName,
+  glueDatabaseName: glueStack.glueDb.ref,
+  athenaOutputLocation: `s3://${storageStack.processedSlpDataBucket.bucketName}/athena-query-results/`,
 });
 
 // Create test files stack that depends on processing stack
@@ -59,4 +62,5 @@ const testFilesStack = new TestFilesStack(app, 'TestFilesStack', {
 // Add dependencies to ensure proper deployment order
 glueStack.addDependency(storageStack);
 processingStack.addDependency(storageStack);
+processingStack.addDependency(glueStack);
 testFilesStack.addDependency(processingStack);

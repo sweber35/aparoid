@@ -4,14 +4,20 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as s3n from 'aws-cdk-lib/aws-s3-notifications';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 
 export interface ProcessingStackProps extends cdk.StackProps {
   slpReplayBucketName: string;
   processedDataBucketName: string;
+  tagTableName: string;
+  glueDatabaseName: string;
+  athenaOutputLocation: string;
 }
 
 export class ProcessingStack extends cdk.Stack {
   public readonly slpToParquetLambda: lambda.Function;
+  public readonly replayStubLambda: lambda.Function;
   public readonly s3EventNotification: s3n.LambdaDestination;
 
   constructor(scope: Construct, id: string, props: ProcessingStackProps) {
@@ -30,6 +36,13 @@ export class ProcessingStack extends cdk.Stack {
       props.processedDataBucketName
     );
 
+    // Import the DynamoDB table from StorageStack
+    const tagTable = dynamodb.Table.fromTableName(
+      this,
+      'aparoid-replay-tags-table',
+      props.tagTableName
+    );
+
     // Slippc Lambda layer
     const slippcLayer = new lambda.LayerVersion(this, 'aparoid-slippc-layer', {
       layerVersionName: `aparoid-slippc-layer`,
@@ -38,9 +51,16 @@ export class ProcessingStack extends cdk.Stack {
       description: 'Layer containing slippc binary for SLP file parsing',
     });
 
-    // Create explicit CloudWatch log group for the Lambda function
-    const lambdaLogGroup = new logs.LogGroup(this, 'aparoid-slp-to-parquet-logs', {
+    // Create explicit CloudWatch log group for the SLP to Parquet Lambda function
+    const slpToParquetLogGroup = new logs.LogGroup(this, 'aparoid-slp-to-parquet-logs', {
       logGroupName: `/aws/lambda/aparoid-slp-to-parquet`,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      retention: logs.RetentionDays.ONE_WEEK,
+    });
+
+    // Create explicit CloudWatch log group for the Replay Stub Lambda function
+    const replayStubLogGroup = new logs.LogGroup(this, 'aparoid-replay-stub-logs', {
+      logGroupName: `/aws/lambda/aparoid-replay-stub`,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       retention: logs.RetentionDays.ONE_WEEK,
     });
@@ -60,12 +80,78 @@ export class ProcessingStack extends cdk.Stack {
       },
       timeout: cdk.Duration.minutes(1),
       memorySize: 256,
-      logGroup: lambdaLogGroup, // Use the explicit log group
+      logGroup: slpToParquetLogGroup, // Use the explicit log group
     });
 
-    // Grant permissions to the Lambda function
+    // Replay Stub Lambda function
+    this.replayStubLambda = new lambda.Function(this, 'aparoid-replay-stub-lambda', {
+      functionName: `aparoid-replay-stub`,
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset('lambda/replay-stub'),
+      environment: {
+        REGION: this.region,
+        TAG_TABLE_NAME: props.tagTableName,
+        GLUE_DATABASE: props.glueDatabaseName,
+        QUERY_OUTPUT_LOCATION: props.athenaOutputLocation,
+      },
+      timeout: cdk.Duration.minutes(5),
+      memorySize: 512,
+      logGroup: replayStubLogGroup, // Use the explicit log group
+    });
+
+    // Grant permissions to the SLP to Parquet Lambda function
     slpReplayBucket.grantRead(this.slpToParquetLambda);
     processedSlpDataBucket.grantWrite(this.slpToParquetLambda);
+
+    // Grant permissions to the Replay Stub Lambda function
+    tagTable.grantReadData(this.replayStubLambda);
+    
+    // Grant Athena permissions to the Replay Stub Lambda
+    this.replayStubLambda.addToRolePolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'athena:StartQueryExecution',
+        'athena:GetQueryExecution',
+        'athena:GetQueryResults',
+        'athena:GetWorkGroup',
+      ],
+      resources: ['*'],
+    }));
+
+    // Grant S3 permissions for Athena query results
+    this.replayStubLambda.addToRolePolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        's3:GetBucketLocation',
+        's3:GetObject',
+        's3:ListBucket',
+        's3:ListBucketMultipartUploads',
+        's3:ListMultipartUploadParts',
+        's3:AbortMultipartUpload',
+        's3:PutObject',
+      ],
+      resources: [
+        `arn:aws:s3:::${props.athenaOutputLocation.split('/')[0]}`,
+        `arn:aws:s3:::${props.athenaOutputLocation.split('/')[0]}/*`,
+      ],
+    }));
+
+    // Grant Glue permissions to the Replay Stub Lambda
+    this.replayStubLambda.addToRolePolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'glue:GetTable',
+        'glue:GetTables',
+        'glue:GetDatabase',
+        'glue:GetDatabases',
+      ],
+      resources: [
+        `arn:aws:glue:${this.region}:${this.account}:catalog`,
+        `arn:aws:glue:${this.region}:${this.account}:database/${props.glueDatabaseName}`,
+        `arn:aws:glue:${this.region}:${this.account}:table/${props.glueDatabaseName}/*`,
+      ],
+    }));
 
     // Create S3 event notification
     this.s3EventNotification = new s3n.LambdaDestination(this.slpToParquetLambda);
@@ -76,11 +162,17 @@ export class ProcessingStack extends cdk.Stack {
       this.s3EventNotification
     );
 
-    // Output the Lambda function name for cross-stack references
+    // Output the Lambda function names for cross-stack references
     new cdk.CfnOutput(this, 'SlpToParquetLambdaName', {
       value: this.slpToParquetLambda.functionName,
       description: 'Name of the Lambda function for SLP to Parquet conversion',
       exportName: `${this.stackName}-SlpToParquetLambdaName`,
+    });
+
+    new cdk.CfnOutput(this, 'ReplayStubLambdaName', {
+      value: this.replayStubLambda.functionName,
+      description: 'Name of the Lambda function for replay stub generation',
+      exportName: `${this.stackName}-ReplayStubLambdaName`,
     });
   }
 } 

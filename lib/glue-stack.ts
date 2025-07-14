@@ -13,7 +13,7 @@ export interface GlueStackProps extends cdk.StackProps {
 
 export class GlueStack extends cdk.Stack {
   public readonly glueDb: glue.CfnDatabase;
-  public readonly createViewsLambda: lambda.Function;
+  // public readonly createViewsLambda: lambda.Function; // Removed
 
   constructor(scope: Construct, id: string, props: GlueStackProps) {
     super(scope, id, props);
@@ -101,105 +101,8 @@ export class GlueStack extends cdk.Stack {
     );
     lookupTable.addDependency(this.glueDb);
 
-    // Create explicit CloudWatch log group for the Lambda function
-    const lambdaLogGroup = new logs.LogGroup(this, 'aparoid-create-glue-views-logs', {
-      logGroupName: `/aws/lambda/aparoid-create-glue-views`,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-      retention: logs.RetentionDays.ONE_WEEK,
-    });
-
-    // Lambda function to create Glue views
-    this.createViewsLambda = new lambda.Function(this, 'aparoid-create-glue-views-lambda', {
-      functionName: `aparoid-create-glue-views`,
-      runtime: lambda.Runtime.NODEJS_18_X,
-      handler: 'index.handler',
-      code: lambda.Code.fromAsset('lambda/create-glue-views'),
-      environment: {
-        GLUE_DATABASE_NAME: this.glueDb.ref,
-        REGION: this.region,
-      },
-      timeout: cdk.Duration.minutes(5),
-      memorySize: 512,
-      logGroup: lambdaLogGroup, // Use the explicit log group
-    });
-
-    // Grant Lambda permissions to create Glue views
-    this.createViewsLambda.addToRolePolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'glue:CreateTable',
-        'glue:DeleteTable',
-        'glue:GetTable',
-        'glue:GetTables',
-        'glue:UpdateTable',
-        'glue:BatchCreatePartition',
-        'glue:BatchDeletePartition',
-        'glue:BatchGetPartition',
-        'glue:GetPartition',
-        'glue:GetPartitions',
-        'glue:UpdatePartition',
-        'glue:DeletePartition',
-        'glue:CreatePartition',
-        'glue:GetDatabase',
-        'glue:GetDatabases',
-        'glue:CreateDatabase',
-        'glue:UpdateDatabase',
-      ],
-      resources: [
-        `arn:aws:glue:${this.region}:${this.account}:catalog`,
-        `arn:aws:glue:${this.region}:${this.account}:database/${this.glueDb.ref}`,
-        `arn:aws:glue:${this.region}:${this.account}:table/${this.glueDb.ref}/*`,
-      ],
-    }));
-
-    // Custom resource to trigger view creation after all tables are created
-    const createViewsResource = new cr.AwsCustomResource(this, 'aparoid-create-glue-views-resource', {
-      onCreate: {
-        service: 'Lambda',
-        action: 'invoke',
-        parameters: {
-          FunctionName: this.createViewsLambda.functionName,
-          InvocationType: 'RequestResponse',
-        },
-        physicalResourceId: cr.PhysicalResourceId.of('GlueViewsCreation'),
-      },
-      onUpdate: {
-        service: 'Lambda',
-        action: 'invoke',
-        parameters: {
-          FunctionName: this.createViewsLambda.functionName,
-          InvocationType: 'RequestResponse',
-        },
-        physicalResourceId: cr.PhysicalResourceId.of('GlueViewsCreation'),
-      },
-      onDelete: {
-        service: 'Lambda',
-        action: 'invoke',
-        parameters: {
-          FunctionName: this.createViewsLambda.functionName,
-          InvocationType: 'RequestResponse',
-        },
-        physicalResourceId: cr.PhysicalResourceId.of('GlueViewsCreation'),
-      },
-      policy: cr.AwsCustomResourcePolicy.fromStatements([
-        new iam.PolicyStatement({
-          effect: iam.Effect.ALLOW,
-          actions: ['lambda:InvokeFunction'],
-          resources: [this.createViewsLambda.functionArn],
-        }),
-      ]),
-      // Add timeout and retry configuration for better reliability
-      timeout: cdk.Duration.minutes(10),
-      installLatestAwsSdk: false,
-    });
-
-    // Ensure views are created after all tables
-    createViewsResource.node.addDependency(framesTable);
-    createViewsResource.node.addDependency(itemsTable);
-    createViewsResource.node.addDependency(platformsTable);
-    createViewsResource.node.addDependency(matchSettingsTable);
-    createViewsResource.node.addDependency(playerSettingsTable);
-    createViewsResource.node.addDependency(lookupTable);
+    // Remove all code related to Glue/Athena view creation, Lambda, and custom resource
+    // Only keep Glue tables and database logic
 
     // Output the database name for cross-stack references
     new cdk.CfnOutput(this, 'GlueDatabaseName', {
