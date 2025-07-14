@@ -19,7 +19,9 @@ export interface ProcessingStackProps extends cdk.StackProps {
 export class ProcessingStack extends cdk.Stack {
   public readonly slpToParquetLambda: lambda.Function;
   public readonly replayStubLambda: lambda.Function;
+  public readonly replayDataLambda: lambda.Function;
   public readonly replayStubApi: apigateway.RestApi;
+  public readonly replayDataApi: apigateway.RestApi;
   public readonly s3EventNotification: s3n.LambdaDestination;
 
   constructor(scope: Construct, id: string, props: ProcessingStackProps) {
@@ -67,6 +69,13 @@ export class ProcessingStack extends cdk.Stack {
       retention: logs.RetentionDays.ONE_WEEK,
     });
 
+    // Create explicit CloudWatch log group for the Replay Data Lambda function
+    const replayDataLogGroup = new logs.LogGroup(this, 'aparoid-replay-data-logs', {
+      logGroupName: `/aws/lambda/aparoid-replay-data`,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      retention: logs.RetentionDays.ONE_WEEK,
+    });
+
     // SLP to Parquet Lambda function
     this.slpToParquetLambda = new lambda.Function(this, 'aparoid-slp-to-parquet-lambda', {
       functionName: `aparoid-slp-to-parquet`,
@@ -102,6 +111,23 @@ export class ProcessingStack extends cdk.Stack {
       logGroup: replayStubLogGroup, // Use the explicit log group
     });
 
+    // Replay Data Lambda function
+    this.replayDataLambda = new lambda.Function(this, 'aparoid-replay-data-lambda', {
+      functionName: `aparoid-replay-data`,
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset('lambda/replay-data'),
+      environment: {
+        REGION: this.region,
+        GLUE_DATABASE: props.glueDatabaseName,
+        QUERY_OUTPUT_LOCATION: props.athenaOutputLocation,
+        CACHE_BUCKET: 'analyze-melee-replay-cache',
+      },
+      timeout: cdk.Duration.minutes(10),
+      memorySize: 1024,
+      logGroup: replayDataLogGroup, // Use the explicit log group
+    });
+
     // API Gateway for Replay Stub Lambda
     this.replayStubApi = new apigateway.RestApi(this, 'aparoid-replay-stub-api', {
       restApiName: 'aparoid-replay-stub-api',
@@ -113,18 +139,65 @@ export class ProcessingStack extends cdk.Stack {
       },
     });
 
-    // Create Lambda integration
+    // API Gateway for Replay Data Lambda
+    this.replayDataApi = new apigateway.RestApi(this, 'aparoid-replay-data-api', {
+      restApiName: 'aparoid-replay-data-api',
+      description: 'API Gateway for replay data retrieval',
+      defaultCorsPreflightOptions: {
+        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowMethods: apigateway.Cors.ALL_METHODS,
+        allowHeaders: ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key'],
+      },
+    });
+
+    // Create Lambda integrations
     const replayStubIntegration = new apigateway.LambdaIntegration(this.replayStubLambda, {
       requestTemplates: {
         'application/json': '{ "statusCode": "200" }',
       },
     });
 
-    // Add POST route to root
+    const replayDataIntegration = new apigateway.LambdaIntegration(this.replayDataLambda, {
+      requestTemplates: {
+        'application/json': '{ "statusCode": "200" }',
+      },
+    });
+
+    // Add POST route to root for replay stub API
     this.replayStubApi.root.addMethod('POST', replayStubIntegration, {
       methodResponses: [
         {
           statusCode: '200',
+          responseParameters: {
+            'method.response.header.Access-Control-Allow-Origin': true,
+            'method.response.header.Access-Control-Allow-Headers': true,
+            'method.response.header.Access-Control-Allow-Methods': true,
+          },
+        },
+        {
+          statusCode: '500',
+          responseParameters: {
+            'method.response.header.Access-Control-Allow-Origin': true,
+            'method.response.header.Access-Control-Allow-Headers': true,
+            'method.response.header.Access-Control-Allow-Methods': true,
+          },
+        },
+      ],
+    });
+
+    // Add POST route to root for replay data API
+    this.replayDataApi.root.addMethod('POST', replayDataIntegration, {
+      methodResponses: [
+        {
+          statusCode: '200',
+          responseParameters: {
+            'method.response.header.Access-Control-Allow-Origin': true,
+            'method.response.header.Access-Control-Allow-Headers': true,
+            'method.response.header.Access-Control-Allow-Methods': true,
+          },
+        },
+        {
+          statusCode: '400',
           responseParameters: {
             'method.response.header.Access-Control-Allow-Origin': true,
             'method.response.header.Access-Control-Allow-Headers': true,
@@ -149,51 +222,68 @@ export class ProcessingStack extends cdk.Stack {
     // Grant permissions to the Replay Stub Lambda function
     tagTable.grantReadData(this.replayStubLambda);
     
-    // Grant Athena permissions to the Replay Stub Lambda
-    this.replayStubLambda.addToRolePolicy(new iam.PolicyStatement({
+    // Grant permissions to the Replay Data Lambda function
+    // Grant S3 permissions for cache bucket
+    this.replayDataLambda.addToRolePolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       actions: [
-        'athena:StartQueryExecution',
-        'athena:GetQueryExecution',
-        'athena:GetQueryResults',
-        'athena:GetWorkGroup',
-      ],
-      resources: ['*'],
-    }));
-
-    // Grant S3 permissions for Athena query results
-    this.replayStubLambda.addToRolePolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        's3:GetBucketLocation',
         's3:GetObject',
-        's3:ListBucket',
-        's3:ListBucketMultipartUploads',
-        's3:ListMultipartUploadParts',
-        's3:AbortMultipartUpload',
         's3:PutObject',
+        's3:DeleteObject',
       ],
       resources: [
-        `arn:aws:s3:::${props.athenaOutputLocation.split('/')[0]}`,
-        `arn:aws:s3:::${props.athenaOutputLocation.split('/')[0]}/*`,
+        'arn:aws:s3:::analyze-melee-replay-cache',
+        'arn:aws:s3:::analyze-melee-replay-cache/*',
       ],
     }));
+    
+    // Grant Athena permissions to both Lambda functions
+    [this.replayStubLambda, this.replayDataLambda].forEach(lambdaFunc => {
+      lambdaFunc.addToRolePolicy(new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'athena:StartQueryExecution',
+          'athena:GetQueryExecution',
+          'athena:GetQueryResults',
+          'athena:GetWorkGroup',
+        ],
+        resources: ['*'],
+      }));
 
-    // Grant Glue permissions to the Replay Stub Lambda
-    this.replayStubLambda.addToRolePolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'glue:GetTable',
-        'glue:GetTables',
-        'glue:GetDatabase',
-        'glue:GetDatabases',
-      ],
-      resources: [
-        `arn:aws:glue:${this.region}:${this.account}:catalog`,
-        `arn:aws:glue:${this.region}:${this.account}:database/${props.glueDatabaseName}`,
-        `arn:aws:glue:${this.region}:${this.account}:table/${props.glueDatabaseName}/*`,
-      ],
-    }));
+      // Grant S3 permissions for Athena query results
+      lambdaFunc.addToRolePolicy(new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          's3:GetBucketLocation',
+          's3:GetObject',
+          's3:ListBucket',
+          's3:ListBucketMultipartUploads',
+          's3:ListMultipartUploadParts',
+          's3:AbortMultipartUpload',
+          's3:PutObject',
+        ],
+        resources: [
+          `arn:aws:s3:::${props.athenaOutputLocation.split('/')[0]}`,
+          `arn:aws:s3:::${props.athenaOutputLocation.split('/')[0]}/*`,
+        ],
+      }));
+
+      // Grant Glue permissions to the Lambda functions
+      lambdaFunc.addToRolePolicy(new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'glue:GetTable',
+          'glue:GetTables',
+          'glue:GetDatabase',
+          'glue:GetDatabases',
+        ],
+        resources: [
+          `arn:aws:glue:${this.region}:${this.account}:catalog`,
+          `arn:aws:glue:${this.region}:${this.account}:database/${props.glueDatabaseName}`,
+          `arn:aws:glue:${this.region}:${this.account}:table/${props.glueDatabaseName}/*`,
+        ],
+      }));
+    });
 
     // Create S3 event notification
     this.s3EventNotification = new s3n.LambdaDestination(this.slpToParquetLambda);
@@ -217,11 +307,23 @@ export class ProcessingStack extends cdk.Stack {
       exportName: `${this.stackName}-ReplayStubLambdaName`,
     });
 
-    // Output the API Gateway URL
+    new cdk.CfnOutput(this, 'ReplayDataLambdaName', {
+      value: this.replayDataLambda.functionName,
+      description: 'Name of the Lambda function for replay data retrieval',
+      exportName: `${this.stackName}-ReplayDataLambdaName`,
+    });
+
+    // Output the API Gateway URLs
     new cdk.CfnOutput(this, 'ReplayStubApiUrl', {
       value: this.replayStubApi.url,
       description: 'URL of the replay stub API Gateway',
       exportName: `${this.stackName}-ReplayStubApiUrl`,
+    });
+
+    new cdk.CfnOutput(this, 'ReplayDataApiUrl', {
+      value: this.replayDataApi.url,
+      description: 'URL of the replay data API Gateway',
+      exportName: `${this.stackName}-ReplayDataApiUrl`,
     });
   }
 } 
