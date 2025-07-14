@@ -3,6 +3,7 @@ import { Construct } from 'constructs';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as s3n from 'aws-cdk-lib/aws-s3-notifications';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as logs from 'aws-cdk-lib/aws-logs';
 
 export interface ProcessingStackProps extends cdk.StackProps {
   slpReplayBucketName: string;
@@ -37,6 +38,13 @@ export class ProcessingStack extends cdk.Stack {
       description: 'Layer containing slippc binary for SLP file parsing',
     });
 
+    // Create explicit CloudWatch log group for the Lambda function
+    const lambdaLogGroup = new logs.LogGroup(this, 'aparoid-slp-to-parquet-logs', {
+      logGroupName: `/aws/lambda/aparoid-slp-to-parquet`,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      retention: logs.RetentionDays.ONE_WEEK,
+    });
+
     // SLP to Parquet Lambda function
     this.slpToParquetLambda = new lambda.Function(this, 'aparoid-slp-to-parquet-lambda', {
       functionName: `aparoid-slp-to-parquet`,
@@ -52,6 +60,7 @@ export class ProcessingStack extends cdk.Stack {
       },
       timeout: cdk.Duration.minutes(1),
       memorySize: 256,
+      logGroup: lambdaLogGroup, // Use the explicit log group
     });
 
     // Grant permissions to the Lambda function

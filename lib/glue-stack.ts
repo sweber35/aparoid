@@ -4,6 +4,7 @@ import * as glue from 'aws-cdk-lib/aws-glue';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as cr from 'aws-cdk-lib/custom-resources';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import { loadGlueSchema, createGlueTableWithLocation } from '../util/glue-schema-loader';
 
 export interface GlueStackProps extends cdk.StackProps {
@@ -100,6 +101,13 @@ export class GlueStack extends cdk.Stack {
     );
     lookupTable.addDependency(this.glueDb);
 
+    // Create explicit CloudWatch log group for the Lambda function
+    const lambdaLogGroup = new logs.LogGroup(this, 'aparoid-create-glue-views-logs', {
+      logGroupName: `/aws/lambda/aparoid-create-glue-views`,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      retention: logs.RetentionDays.ONE_WEEK,
+    });
+
     // Lambda function to create Glue views
     this.createViewsLambda = new lambda.Function(this, 'aparoid-create-glue-views-lambda', {
       functionName: `aparoid-create-glue-views`,
@@ -112,6 +120,7 @@ export class GlueStack extends cdk.Stack {
       },
       timeout: cdk.Duration.minutes(5),
       memorySize: 512,
+      logGroup: lambdaLogGroup, // Use the explicit log group
     });
 
     // Grant Lambda permissions to create Glue views
@@ -163,6 +172,15 @@ export class GlueStack extends cdk.Stack {
         },
         physicalResourceId: cr.PhysicalResourceId.of('GlueViewsCreation'),
       },
+      onDelete: {
+        service: 'Lambda',
+        action: 'invoke',
+        parameters: {
+          FunctionName: this.createViewsLambda.functionName,
+          InvocationType: 'RequestResponse',
+        },
+        physicalResourceId: cr.PhysicalResourceId.of('GlueViewsCreation'),
+      },
       policy: cr.AwsCustomResourcePolicy.fromStatements([
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
@@ -170,6 +188,9 @@ export class GlueStack extends cdk.Stack {
           resources: [this.createViewsLambda.functionArn],
         }),
       ]),
+      // Add timeout and retry configuration for better reliability
+      timeout: cdk.Duration.minutes(10),
+      installLatestAwsSdk: false,
     });
 
     // Ensure views are created after all tables

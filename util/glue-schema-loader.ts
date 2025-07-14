@@ -65,6 +65,8 @@ function createTableInput(schema: GlueTableSchema, location: string, format: 'pa
       bucketColumns: [],
       sortColumns: [],
       parameters: {},
+      compressed: false,
+      storedAsSubDirectories: false,
     },
     partitionKeys: schema.partitionKeys || [],
     tableParameters: {

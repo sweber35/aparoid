@@ -41,6 +41,8 @@ Before deploying, configure your AWS environment:
 * `npx cdk deploy ProcessingStack`  deploy only the processing stack (requires StorageStack)
 * `npx cdk diff`  compare deployed stack with current state
 * `npx cdk destroy --all`  destroy all stacks (use with caution!)
+* `npm run cleanup-logs`  clean up CloudWatch log groups if they cause conflicts
+* `npm run update-views`  update Glue views without redeploying the entire stack (useful for view development)
 
 ## Stacks
 
@@ -68,3 +70,12 @@ The stacks are deployed in the following order to ensure proper dependencies:
 2. GlueStack (depends on StorageStack for bucket names)
 3. ProcessingStack (depends on StorageStack for bucket names)
 4. TestFilesStack (deploys test SLP files AFTER processing infrastructure is ready)
+
+### Efficient View Development
+To avoid full stack redeployment when developing Glue views:
+
+1. **For view updates only**: Use `npm run update-views` to update views without redeploying the entire GlueStack
+2. **For view development**: Edit the views in `lambda/create-glue-views/index.js`, then run `npm run update-views`
+3. **For new views**: Add them to the `views` array in the Lambda function, then run `npm run update-views`
+
+This approach significantly speeds up the development cycle for view modifications.
