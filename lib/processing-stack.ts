@@ -21,8 +21,10 @@ export class ProcessingStack extends cdk.Stack {
   public readonly slpToParquetLambda: lambda.Function;
   public readonly replayStubLambda: lambda.Function;
   public readonly replayDataLambda: lambda.Function;
+  public readonly replayTagLambda: lambda.Function;
   public readonly replayStubApi: apigateway.RestApi;
   public readonly replayDataApi: apigateway.RestApi;
+  public readonly replayTagApi: apigateway.RestApi;
   public readonly s3EventNotification: s3n.LambdaDestination;
 
   constructor(scope: Construct, id: string, props: ProcessingStackProps) {
@@ -73,6 +75,13 @@ export class ProcessingStack extends cdk.Stack {
     // Create explicit CloudWatch log group for the Replay Data Lambda function
     const replayDataLogGroup = new logs.LogGroup(this, 'aparoid-replay-data-logs', {
       logGroupName: `/aws/lambda/aparoid-replay-data`,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      retention: logs.RetentionDays.ONE_WEEK,
+    });
+
+    // Create explicit CloudWatch log group for the Replay Tag Lambda function
+    const replayTagLogGroup = new logs.LogGroup(this, 'aparoid-replay-tag-logs', {
+      logGroupName: `/aws/lambda/aparoid-replay-tag`,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       retention: logs.RetentionDays.ONE_WEEK,
     });
@@ -129,6 +138,21 @@ export class ProcessingStack extends cdk.Stack {
       logGroup: replayDataLogGroup, // Use the explicit log group
     });
 
+    // Replay Tag Lambda function
+    this.replayTagLambda = new lambda.Function(this, 'aparoid-replay-tag-lambda', {
+      functionName: `aparoid-replay-tag`,
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset('lambda/replay-tag'),
+      environment: {
+        REGION: this.region,
+        TAG_TABLE_NAME: props.tagTableName,
+      },
+      timeout: cdk.Duration.minutes(1),
+      memorySize: 256,
+      logGroup: replayTagLogGroup, // Use the explicit log group
+    });
+
     // API Gateway for Replay Stub Lambda
     this.replayStubApi = new apigateway.RestApi(this, 'aparoid-replay-stub-api', {
       restApiName: 'aparoid-replay-stub-api',
@@ -151,6 +175,17 @@ export class ProcessingStack extends cdk.Stack {
       },
     });
 
+    // API Gateway for Replay Tag Lambda
+    this.replayTagApi = new apigateway.RestApi(this, 'aparoid-replay-tag-api', {
+      restApiName: 'aparoid-replay-tag-api',
+      description: 'API Gateway for replay tag management',
+      defaultCorsPreflightOptions: {
+        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowMethods: apigateway.Cors.ALL_METHODS,
+        allowHeaders: ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key'],
+      },
+    });
+
     // Create Lambda integrations
     const replayStubIntegration = new apigateway.LambdaIntegration(this.replayStubLambda, {
       requestTemplates: {
@@ -159,6 +194,12 @@ export class ProcessingStack extends cdk.Stack {
     });
 
     const replayDataIntegration = new apigateway.LambdaIntegration(this.replayDataLambda, {
+      requestTemplates: {
+        'application/json': '{ "statusCode": "200" }',
+      },
+    });
+
+    const replayTagIntegration = new apigateway.LambdaIntegration(this.replayTagLambda, {
       requestTemplates: {
         'application/json': '{ "statusCode": "200" }',
       },
@@ -188,6 +229,36 @@ export class ProcessingStack extends cdk.Stack {
 
     // Add POST route to root for replay data API
     this.replayDataApi.root.addMethod('POST', replayDataIntegration, {
+      methodResponses: [
+        {
+          statusCode: '200',
+          responseParameters: {
+            'method.response.header.Access-Control-Allow-Origin': true,
+            'method.response.header.Access-Control-Allow-Headers': true,
+            'method.response.header.Access-Control-Allow-Methods': true,
+          },
+        },
+        {
+          statusCode: '400',
+          responseParameters: {
+            'method.response.header.Access-Control-Allow-Origin': true,
+            'method.response.header.Access-Control-Allow-Headers': true,
+            'method.response.header.Access-Control-Allow-Methods': true,
+          },
+        },
+        {
+          statusCode: '500',
+          responseParameters: {
+            'method.response.header.Access-Control-Allow-Origin': true,
+            'method.response.header.Access-Control-Allow-Headers': true,
+            'method.response.header.Access-Control-Allow-Methods': true,
+          },
+        },
+      ],
+    });
+
+    // Add POST route to root for replay tag API
+    this.replayTagApi.root.addMethod('POST', replayTagIntegration, {
       methodResponses: [
         {
           statusCode: '200',
@@ -248,6 +319,9 @@ export class ProcessingStack extends cdk.Stack {
       props.replayCacheBucketName
     );
     replayCacheBucket.grantReadWrite(this.replayDataLambda);
+    
+    // Grant permissions to the Replay Tag Lambda function
+    tagTable.grantWriteData(this.replayTagLambda);
     
     // Grant S3 permissions to the Replay Data Lambda for Athena query results
     processedSlpDataBucket.grantWrite(this.replayDataLambda);
@@ -355,6 +429,12 @@ export class ProcessingStack extends cdk.Stack {
       value: this.replayDataApi.url,
       description: 'URL of the replay data API Gateway',
       exportName: `${this.stackName}-ReplayDataApiUrl`,
+    });
+
+    new cdk.CfnOutput(this, 'ReplayTagApiUrl', {
+      value: this.replayTagApi.url,
+      description: 'URL of the replay tag API Gateway',
+      exportName: `${this.stackName}-ReplayTagApiUrl`,
     });
   }
 } 
