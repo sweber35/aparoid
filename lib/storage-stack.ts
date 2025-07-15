@@ -11,6 +11,7 @@ export interface StorageStackProps extends cdk.StackProps {
 export class StorageStack extends cdk.Stack {
   public readonly slpReplayBucket: s3.Bucket;
   public readonly processedSlpDataBucket: s3.Bucket;
+  public readonly replayCacheBucket: s3.Bucket;
   public readonly replayTagsTable: dynamodb.Table;
 
   constructor(scope: Construct, id: string, props?: StorageStackProps) {
@@ -30,6 +31,19 @@ export class StorageStack extends cdk.Stack {
       versioned: false,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
+    });
+
+    // S3 bucket for replay data cache
+    this.replayCacheBucket = new s3.Bucket(this, 'aparoid-replay-cache-bucket', {
+      bucketName: `aparoid-replay-cache`,
+      versioned: false,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+      lifecycleRules: [
+        {
+          expiration: cdk.Duration.days(7), // Cache expires after 7 days
+        },
+      ],
     });
 
     // Auto-populate processed data bucket with lookup data
@@ -59,6 +73,12 @@ export class StorageStack extends cdk.Stack {
       value: this.processedSlpDataBucket.bucketName,
       description: 'Name of the S3 bucket for processed SLP data',
       exportName: `${this.stackName}-ProcessedSlpDataBucketName`,
+    });
+
+    new cdk.CfnOutput(this, 'ReplayCacheBucketName', {
+      value: this.replayCacheBucket.bucketName,
+      description: 'Name of the S3 bucket for replay data cache',
+      exportName: `${this.stackName}-ReplayCacheBucketName`,
     });
 
     // Output the table name for cross-stack references

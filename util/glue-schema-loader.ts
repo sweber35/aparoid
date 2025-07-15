@@ -43,7 +43,7 @@ export function createGlueTableWithLocation(
   databaseName: string,
   bucketLocation: string,
   tablePath: string,
-  format: 'parquet' | 'json' = 'parquet'
+  format: 'parquet' | 'json' | 'jsonl' = 'parquet'
 ): glue.CfnTable {
   const tableInput = createTableInput(schema, `${bucketLocation}/${tablePath}`, format);
   
@@ -54,7 +54,7 @@ export function createGlueTableWithLocation(
   });
 }
 
-function createTableInput(schema: GlueTableSchema, location: string, format: 'parquet' | 'json'): any {
+function createTableInput(schema: GlueTableSchema, location: string, format: 'parquet' | 'json' | 'jsonl'): any {
   const baseTableInput = {
     name: schema.name,
     description: schema.description,
@@ -92,7 +92,7 @@ function createTableInput(schema: GlueTableSchema, location: string, format: 'pa
         }
       }
     };
-  } else if (format === 'json') {
+  } else if (format === 'json' || format === 'jsonl') {
     return {
       ...baseTableInput,
       parameters: {
@@ -112,5 +112,5 @@ function createTableInput(schema: GlueTableSchema, location: string, format: 'pa
     };
   }
 
-  throw new Error(`Unsupported format: ${format}. Supported formats are 'parquet' and 'json'`);
+  throw new Error(`Unsupported format: ${format}. Supported formats are 'parquet', 'json', and 'jsonl'`);
 } 

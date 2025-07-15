@@ -73,7 +73,7 @@ export class GlueStack extends cdk.Stack {
       this.glueDb.ref,
       `s3://${props.processedDataBucketName}`,
       'match-settings',
-      'json'
+      'jsonl'
     );
     matchSettingsTable.addDependency(this.glueDb);
 
@@ -85,7 +85,7 @@ export class GlueStack extends cdk.Stack {
       this.glueDb.ref,
       `s3://${props.processedDataBucketName}`,
       'player-settings',
-      'json'
+      'jsonl'
     );
     playerSettingsTable.addDependency(this.glueDb);
 

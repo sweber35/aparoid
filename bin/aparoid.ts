@@ -48,6 +48,7 @@ const processingStack = new ProcessingStack(app, 'ProcessingStack', {
   env,
   slpReplayBucketName: storageStack.slpReplayBucket.bucketName,
   processedDataBucketName: storageStack.processedSlpDataBucket.bucketName,
+  replayCacheBucketName: storageStack.replayCacheBucket.bucketName,
   tagTableName: storageStack.replayTagsTable.tableName,
   glueDatabaseName: glueStack.glueDb.ref,
   athenaOutputLocation: `s3://${storageStack.processedSlpDataBucket.bucketName}/athena-query-results/`,

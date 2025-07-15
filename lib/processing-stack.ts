@@ -11,6 +11,7 @@ import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 export interface ProcessingStackProps extends cdk.StackProps {
   slpReplayBucketName: string;
   processedDataBucketName: string;
+  replayCacheBucketName: string;
   tagTableName: string;
   glueDatabaseName: string;
   athenaOutputLocation: string;
@@ -121,7 +122,7 @@ export class ProcessingStack extends cdk.Stack {
         REGION: this.region,
         GLUE_DATABASE: props.glueDatabaseName,
         QUERY_OUTPUT_LOCATION: props.athenaOutputLocation,
-        CACHE_BUCKET: 'analyze-melee-replay-cache',
+        CACHE_BUCKET: props.replayCacheBucketName,
       },
       timeout: cdk.Duration.minutes(10),
       memorySize: 1024,
@@ -241,20 +242,12 @@ export class ProcessingStack extends cdk.Stack {
       ],
     }));
     
-    // Grant permissions to the Replay Data Lambda function
-    // Grant S3 permissions for cache bucket
-    this.replayDataLambda.addToRolePolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        's3:GetObject',
-        's3:PutObject',
-        's3:DeleteObject',
-      ],
-      resources: [
-        'arn:aws:s3:::analyze-melee-replay-cache',
-        'arn:aws:s3:::analyze-melee-replay-cache/*',
-      ],
-    }));
+    const replayCacheBucket = s3.Bucket.fromBucketName(
+      this,
+      'aparoid-replay-cache-bucket',
+      props.replayCacheBucketName
+    );
+    replayCacheBucket.grantReadWrite(this.replayDataLambda);
     
     // Grant S3 permissions to the Replay Data Lambda for Athena query results
     processedSlpDataBucket.grantWrite(this.replayDataLambda);
