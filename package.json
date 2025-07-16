@@ -9,7 +9,8 @@
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk",
-    "datalake": "AWS_PROFILE=aparoid-dev npx cdk deploy StorageStack GlueStack ProcessingStack TestFilesStack --require-approval never"
+    "datalake": "AWS_PROFILE=aparoid-dev npx cdk deploy StorageStack GlueStack ProcessingStack TestFilesStack --require-approval never",
+    "frontend": "AWS_PROFILE=aparoid-dev npx cdk deploy FrontendStack  --require-approval never && cd frontend && ./deploy.sh"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
