@@ -38,23 +38,6 @@ namespace slip {
     myfile.read(_rb,_file_size);
     myfile.close();
 
-    // Check if we have a compressed .zlp file
-    bool is_compressed = same4(&_rb[0],LZMA_HEADER);
-    if (is_compressed) {
-      DOUT1("  Decompressing file");
-      // Decompress the read buffer
-      std::string decomp = decompressWithLzma(_rb, _file_size);
-      // Get the new file size
-      _file_size    = decomp.size();
-      // Delete the old read buffer
-      delete[] _rb;
-      // Reallocate it with more spce
-      _rb = new char[_file_size];
-      // Copy buffer from the decompressed string
-      memcpy(_rb,decomp.c_str(),_file_size);
-      DOUT1("  Decompressed File Size: " << +_file_size);
-    }
-
     bool status = this->_parse();
     return status;
   }
@@ -763,15 +746,24 @@ namespace slip {
   }
 
   void Parser::playerFramesAsParquet() {
-    _replay.playerFramesAsParquet();
+    arrow::Status status = _replay.playerFramesAsParquet();
+    if (!status.ok()) {
+      std::cerr << "Error writing player frames to Parquet: " << status.ToString() << std::endl;
+    }
   }
 
   void Parser::itemFramesAsParquet() {
-    _replay.itemFramesAsParquet();
+    arrow::Status status = _replay.itemFramesAsParquet();
+    if (!status.ok()) {
+      std::cerr << "Error writing item frames to Parquet: " << status.ToString() << std::endl;
+    }
   }
 
   void Parser::fodPlatformChangesAsParquet() {
-    _replay.fodPlatformChangesAsParquet();
+    arrow::Status status = _replay.fodPlatformChangesAsParquet();
+    if (!status.ok()) {
+      std::cerr << "Error writing FOD platform changes to Parquet: " << status.ToString() << std::endl;
+    }
   }
 
   std::string Parser::settingsAsJson() {
