@@ -13,13 +13,14 @@ import { StorageStack } from '../lib/storage-stack';
 import { GlueStack } from '../lib/glue-stack';
 import { ProcessingStack } from '../lib/processing-stack';
 import { TestFilesStack } from '../lib/test-files-stack';
+import { FrontendStack } from '../lib/frontend-stack';
 
 const app = new cdk.App();
 
 // Get environment configuration from environment variables
 // Prioritize .env file values over AWS profile values
 const targetAccount = process.env.AWS_ACCOUNT_ID || process.env.CDK_DEFAULT_ACCOUNT;
-const targetRegion = process.env.AWS_REGION || process.env.CDK_DEFAULT_REGION || 'us-east-2';
+const targetRegion = process.env.AWS_REGION || process.env.CDK_DEFAULT_REGION || 'us-east-1';
 
 // Debug: Show what environment variables are being read
 console.log('🔍 Environment variables:');
@@ -60,8 +61,15 @@ const testFilesStack = new TestFilesStack(app, 'TestFilesStack', {
   slpReplayBucketName: storageStack.slpReplayBucket.bucketName,
 });
 
+// Create frontend stack
+const frontendStack = new FrontendStack(app, 'FrontendStack', {
+  env,
+  processingStack: processingStack,
+});
+
 // Add dependencies to ensure proper deployment order
 glueStack.addDependency(storageStack);
 processingStack.addDependency(storageStack);
 processingStack.addDependency(glueStack);
 testFilesStack.addDependency(processingStack);
+frontendStack.addDependency(processingStack);

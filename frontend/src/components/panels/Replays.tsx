@@ -4,7 +4,7 @@ import { Picker } from "~/components/common/Picker";
 import { StageBadge, PlayerBadge } from "~/components/common/Badge";
 import { ReplayStub, SelectionStore, currentCategory, setCurrentCategory, initCategoryStore } from "~/state/awsSelectionStore";
 import { characterNameByExternalId } from "~/common/ids";
-import { LAMBDA_URLS } from "~/config";
+import { API_CONFIG } from "~/config";
 import { createEffect } from "solid-js";
 
 interface PlayerInfo {
@@ -225,7 +225,7 @@ function GameInfo(props: { replayStub: ReplayStub, loading?: boolean }) {
     console.log('Sending request to Lambda:', requestBody);
     
     try {
-      const response = await fetch(LAMBDA_URLS.REPLAY_TAGS_LAMBDA, {
+      const response = await fetch(API_CONFIG.replayTag, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),

@@ -54,6 +54,7 @@ Before deploying, configure your AWS environment:
 - **GlueStack**: AWS Glue database, tables, and views for data analytics
 - **ProcessingStack**: Lambda functions and processing logic for SLP file conversion
 - **TestFilesStack**: Deploys test SLP files to the existing replays bucket
+- **FrontendStack**: S3 static hosting with CloudFront CDN for the Vite/SolidJS frontend
 
 ### Resource Naming Convention
 All resources follow a consistent naming pattern: `aparoid-{resource-type}-{region}` or `aparoid-{resource-type}-{account}-{region}`
@@ -69,7 +70,8 @@ The stacks are deployed in the following order to ensure proper dependencies:
 1. StorageStack (creates S3 buckets and DynamoDB tables)
 2. GlueStack (depends on StorageStack for bucket names)
 3. ProcessingStack (depends on StorageStack for bucket names)
-4. TestFilesStack (deploys test SLP files AFTER processing infrastructure is ready)
+4. FrontendStack (depends on ProcessingStack for API Gateway URLs)
+5. TestFilesStack (deploys test SLP files AFTER processing infrastructure is ready)
 
 ### Efficient View Development
 To avoid full stack redeployment when developing Glue views:
@@ -79,3 +81,22 @@ To avoid full stack redeployment when developing Glue views:
 3. **For new views**: Add them to the `views` array in the Lambda function, then run `npm run update-views`
 
 This approach significantly speeds up the development cycle for view modifications.
+
+## Frontend Integration
+
+The project includes infrastructure for hosting a Vite/SolidJS frontend:
+
+### Setup
+1. **Copy your existing Vite/SolidJS project** to the `frontend/` directory
+2. **Deploy the infrastructure**: `npm run deploy`
+3. **Get API URLs**: `node util/get-api-urls.js`
+4. **Deploy your frontend**: `cd frontend && ./deploy.sh`
+
+### Features
+- **S3 Static Hosting**: Secure bucket with CloudFront CDN
+- **HTTPS**: Automatic SSL certificate and HTTPS redirect
+- **SPA Support**: Proper routing for single-page applications
+- **API Integration**: Pre-configured CORS for Lambda APIs
+- **Fast Deployments**: Automated build and deployment script
+
+See `frontend/README.md` for detailed setup instructions.

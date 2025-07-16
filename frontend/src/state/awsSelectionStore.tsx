@@ -2,7 +2,7 @@ import { createStore } from "solid-js/store";
 import { createEffect, createSignal, on } from "solid-js";
 import { ReplayData, Frame } from "~/common/types";
 import { stageNameByExternalId, ExternalStageName } from "~/common/ids";
-import { LAMBDA_URLS } from "~/config";
+import { API_CONFIG } from "~/config";
 
 export type ActionState = 'CLIFF_WAIT' | 'FALL' | 'JUMP' |
                           'AIR_DODGE' | 'IDLE' | 'SHINE_START' |
@@ -32,7 +32,7 @@ export type Filter =
   | { type: "codeOrName"; label: string };
 
 export async function loadStubsForActionSequence(actionSequence: {action: ActionState, minFrames?: number, maxFrames?: number}[]): Promise<ReplayStub[]> {
-    const res = await fetch(LAMBDA_URLS.REPLAY_STUBS_LAMBDA, {
+    const res = await fetch(API_CONFIG.replayStub, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ actions: actionSequence }),
@@ -177,7 +177,7 @@ export async function initCategoryStore(category: Category) {
             }
 
             console.log('Fetching replay data for:', cacheKey);
-            const result = await fetch(LAMBDA_URLS.REPLAY_DATA_LAMBDA, {
+            const result = await fetch(API_CONFIG.replayData, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(stub),
