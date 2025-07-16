@@ -4,6 +4,7 @@ import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as cr from 'aws-cdk-lib/custom-resources';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import { CfnDistribution } from 'aws-cdk-lib/aws-cloudfront';
 import { Construct } from 'constructs';
 
@@ -22,23 +23,37 @@ export class FrontendStack extends cdk.Stack {
     // S3 bucket for static website hosting
     this.websiteBucket = new s3.Bucket(this, 'WebsiteBucket', {
       bucketName: `${this.account}-${this.region}-aparoid-frontend`,
-      publicReadAccess: true, // Temporarily make public for testing
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ACLS, // Allow public access for testing
+      publicReadAccess: false, // Keep private for security
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL, // Block all public access
       removalPolicy: cdk.RemovalPolicy.DESTROY, // For development - change to RETAIN for production
       autoDeleteObjects: true, // For development - remove for production
-      websiteIndexDocument: 'index.html',
-      websiteErrorDocument: 'index.html',
+      // Remove website configuration since we're using S3Origin
     });
 
     // CloudFront distribution with S3 website origin
     this.cloudFrontDistribution = new cloudfront.Distribution(this, 'DistributionV2', {
+      // Optimize for Cloudflare integration
+      priceClass: cloudfront.PriceClass.PRICE_CLASS_100, // Use only North America and Europe
+      httpVersion: cloudfront.HttpVersion.HTTP2,
+      
+      // Add custom domain support
+      domainNames: ['aparoid.bryte.app'],
+      certificate: acm.Certificate.fromCertificateArn(
+        this,
+        'CustomDomainCertificate',
+        'arn:aws:acm:us-east-1:374010404974:certificate/cbc7e134-226c-4c40-99b5-c85032fe5b51'
+      ),
+  
       defaultBehavior: {
-        origin: new origins.S3StaticWebsiteOrigin(this.websiteBucket, {
-          // This will properly use the S3 website endpoint
+        origin: new origins.S3Origin(this.websiteBucket, {
+          // Use S3Origin instead of S3StaticWebsiteOrigin for better custom domain support
         }),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
         originRequestPolicy: cloudfront.OriginRequestPolicy.CORS_S3_ORIGIN,
+        responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
+        allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+        cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
       },
       errorResponses: [
         {
