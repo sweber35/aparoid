@@ -10,13 +10,13 @@ Each schema file should follow this simplified structure:
 {
   "name": "table_name",
   "description": "Table description",
-  "columns": [
-    {
-      "name": "column_name",
-      "type": "data_type",
-      "comment": "Column description"
-    }
-  ],
+    "columns": [
+      {
+        "name": "column_name",
+        "type": "data_type",
+        "comment": "Column description"
+      }
+    ],
   "partitionKeys": []
 }
 ```
@@ -102,5 +102,5 @@ Common Glue data types:
 - Use descriptive column names and comments
 - Consider partitioning for large tables
 - Use appropriate data types for your data
-- Keep schemas version controlled
+- Keep schemas version controlled 
 - Choose the right format: Parquet for analytical queries, JSON for flexible schemas 
