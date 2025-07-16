@@ -790,28 +790,12 @@ namespace slip {
     _replay.cleanup();
   }
 
-//   std::string Parser::asJson(bool delta) {
-//     return _replay.replayAsJson(delta);
-//   }
-
-  std::string Parser::playerFramesAsJson() {
-    return _replay.playerFramesAsJson();
-  }
-
   void Parser::playerFramesAsParquet() {
     _replay.playerFramesAsParquet();
   }
 
-  std::string Parser::itemFramesAsJson() {
-    return _replay.itemFramesAsJson();
-  }
-
   void Parser::itemFramesAsParquet() {
     _replay.itemFramesAsParquet();
-  }
-
-  std::string Parser::fodPlatformChangesAsJson() {
-    return _replay.fodPlatformChangesAsJson();
   }
 
   void Parser::fodPlatformChangesAsParquet() {

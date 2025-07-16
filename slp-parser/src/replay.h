@@ -195,12 +195,8 @@ struct SlippiReplay {
   std::vector<SlippiFodPlatform> platform_events = {};//Array of SlippiFodPlatform events which represents every time either FoD platform changes height
   void setFrames(int32_t max_frames);
   void cleanup();
-//   std::string replayAsJson(bool delta);
-  std::string playerFramesAsJson();
   arrow::Status playerFramesAsParquet();
-  std::string itemFramesAsJson();
   arrow::Status itemFramesAsParquet();
-  std::string fodPlatformChangesAsJson();
   arrow::Status fodPlatformChangesAsParquet();
   std::string settingsAsJson();
   std::string matchSettingsAsJson(const std::string& filename);
