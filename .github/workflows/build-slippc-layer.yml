@@ -1,0 +1,75 @@
+name: Build Slippc Binary and Deploy Lambda Layer
+
+on:
+  push:
+    branches:
+      - feature/build-slp-parser
+    paths:
+      - 'slp-parser/**'
+      - 'lambda-layers/slippc-layer/**'
+      - '.github/workflows/build-slippc-layer.yml'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install CDK dependencies
+        run: npm ci
+
+      - name: Build binary using Docker Buildx
+        uses: docker/build-push-action@v5
+        with:
+          context: ./slp-parser
+          file: ./slp-parser/Dockerfile
+          tags: slippc-builder
+          load: true
+          platforms: linux/amd64
+
+      - name: Copy binary out of container
+        run: |
+          CONTAINER_ID=$(docker create slippc-builder)
+          docker cp "$CONTAINER_ID":/src/slippc/slippc ./lambda-layers/slippc-layer/bin/slippc
+          docker rm "$CONTAINER_ID"
+
+      - name: Ensure binary is executable
+        run: chmod +x lambda-layers/slippc-layer/bin/slippc
+
+      - name: Verify binary
+        run: |
+          echo "Binary size:"
+          ls -lh lambda-layers/slippc-layer/bin/slippc
+          echo "Binary architecture:"
+          file lambda-layers/slippc-layer/bin/slippc
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy Lambda Layer via CDK
+        run: |
+          # Deploy only the ProcessingStack to update the Lambda layer
+          npx cdk deploy ProcessingStack --require-approval never
+        env:
+          AWS_PROFILE: aparoid-dev
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add lambda-layers/slippc-layer/bin/slippc
+          git diff --staged --quiet || git commit -m "Update slippc binary [skip ci]"
+          git push 
