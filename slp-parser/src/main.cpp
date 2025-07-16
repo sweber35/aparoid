@@ -15,7 +15,6 @@
 #include "util.h"
 #include "parser.h"
 #include "analyzer.h"
-#include "compressor.h"
 
 #ifndef ARROW_THROW_NOT_OK
 #define ARROW_THROW_NOT_OK(expr)             \
@@ -63,19 +62,14 @@ bool cmdOptionExists(char** begin, char** end, const std::string& option) {
 
 void printUsage() {
   std::cout
-    << "Usage: slippc -i <infile> [-x | -X <zlpfle>] [-j <jsonfile>] [-a <analysisfile>] [-f] [-d <debuglevel>] [-h]:" << std::endl
-    << "  -i        Set input file (can be .slp, .zlp, or a whole directory)" << std::endl
+    << "Usage: slippc -i <infile> [-j <jsonfile>] [-a <analysisfile>] [-f] [-d <debuglevel>] [-h]:" << std::endl
+    << "  -i        Set input file (can be .slp or a whole directory)" << std::endl
     << "  -j        Output <infile> in .json format to <jsonfile> (use \"-\" for stdout)" << std::endl
     << "  -a        Output an analysis of <infile> in .json format to <analysisfile> (use \"-\" for stdout)" << std::endl
     << "  -f        When used with -j <jsonfile>, write full frame info (instead of just frame deltas)" << std::endl
-    << "  -x        Compress or decompress a replay" << std::endl
-    << "  -X        Set output file name for compression" << std::endl
     << std::endl
     << "Debug options:" << std::endl
     << "  -d           Run at debug level <debuglevel> (show debug output)" << std::endl
-    << "  --skip-save  Skip saving compressed replay, validate only" << std::endl
-    << "  --raw-enc    Output raw encodes with -x (DANGEROUS, debug only)" << std::endl
-    << "  --dump-gecko Dump gecko codes to <inputfilename>.dat" << std::endl
     << "  -h           Show this help message" << std::endl
     ;
 }
@@ -83,14 +77,9 @@ void printUsage() {
 typedef struct _cmdoptions {
   char* dlevel       = nullptr;
   char* infile       = nullptr;
-  char* cfile        = nullptr;
   char* outfile      = nullptr;
   char* analysisfile = nullptr;
   bool  nodelta      = false;
-  bool  encode       = false;
-  bool  rawencode    = false;
-  bool  skipsave     = false;
-  bool  dumpgecko    = false;
   bool  dirmode      = false;
   int   debug        = 0;
 } cmdoptions;
@@ -99,14 +88,9 @@ cmdoptions getCommandLineOptions(int argc, char** argv) {
   _cmdoptions c;
   c.dlevel       = getCmdOption(   argv, argv+argc, "-d");
   c.infile       = getCmdOption(   argv, argv+argc, "-i");
-  c.cfile        = getCmdOption(   argv, argv+argc, "-X");
   c.outfile      = getCmdOption(   argv, argv+argc, "-j");
   c.analysisfile = getCmdOption(   argv, argv+argc, "-a");
   c.nodelta      = cmdOptionExists(argv, argv+argc, "-f");
-  c.encode       = cmdOptionExists(argv, argv+argc, "-x");
-  c.rawencode    = cmdOptionExists(argv, argv+argc, "--raw-enc");
-  c.skipsave     = cmdOptionExists(argv, argv+argc, "--skip-save");
-  c.dumpgecko    = cmdOptionExists(argv, argv+argc, "--dump-gecko");
   c.dirmode      = isDirectory(c.infile);
 
   if (c.dlevel) {
@@ -134,7 +118,7 @@ cmdoptions getCommandLineOptions(int argc, char** argv) {
     }
     std::string save, saveext;
     str_vec file_res = pfd::open_file(
-      "Select an input File", ".", {"Slippi Files", "*.slp *.zlp"}).result();
+      "Select an input File", ".", {"Slippi Files", "*.slp"}).result();
     if(file_res.empty()) {
       printUsage();
       return "";
@@ -145,11 +129,7 @@ cmdoptions getCommandLineOptions(int argc, char** argv) {
     std::string inext  = getFileExt(file_res[0]);
 
     if (inext.compare("slp") == 0) {
-      if (askYesNo("Compress?","Output compressed file (yes) or JSON (no)?")) {
-        DOUT1("GUI mode, compressed output");
-        save = pfd::save_file("Select an Output file", inbase+".zlp", { "Zlippi Files", "*.zlp"}).result();
-        stringtoChars(save,&c.cfile);
-      } else if (askYesNo("Analysis?", "Output analysis JSON (yes) or regular JSON (no)?")) {
+      if (askYesNo("Analysis?", "Output analysis JSON (yes) or regular JSON (no)?")) {
         DOUT1("GUI mode, analysis output");
         save = pfd::save_file("Select an Output file", inbase+".json", { "JSON Files", "*.json"}).result();
         stringtoChars(save,&c.analysisfile);
@@ -158,10 +138,6 @@ cmdoptions getCommandLineOptions(int argc, char** argv) {
         save = pfd::save_file("Select an Output file", inbase+".json", { "JSON Files", "*.json"}).result();
         stringtoChars(save,&c.outfile);
       }
-    } else if (inext.compare("zlp") == 0) {
-      DOUT1("GUI mode, decompressed output");
-      save = pfd::save_file("Select an Output file", inbase+".slp", { "Slippi Files", "*.slp"}).result();
-      stringtoChars(save,&c.cfile);
     }
   }
 #endif
@@ -174,50 +150,12 @@ inline void cleanupCommandOptions(cmdoptions &c) {
   if(c.infile) {
     delete[] c.infile;
   }
-  if(c.cfile) {
-    delete[] c.cfile;
-  }
   if(c.outfile) {
     delete[] c.outfile;
   }
 }
 
-int handleCompression(const cmdoptions &c, const int debug) {
-  slip::Compressor cmp(debug);
 
-  if (c.cfile) {
-    if (!(cmp.setOutputFilename(c.cfile))) {
-      FAIL("  File " << c.cfile << " already exists or is invalid");
-      return 4;
-    }
-  }
-
-  if (c.dumpgecko) {
-    DOUT1("  Setting gecko output filename");
-    cmp.setGeckoOutputFilename(c.infile);
-  }
-
-  DOUT1("  Encoding / decoding replay");
-  if (not cmp.loadFromFile(c.infile)) {
-    FAIL("  Failed to encode input; exiting");
-    return 2;
-  }
-
-  DOUT1("  Validating encoding");
-  if (!cmp.validate()) {
-    FAIL("  Validation failed; exiting");
-    return 3;
-  }
-
-  if (c.skipsave) {
-    DOUT1("  Skipping saving");
-  } else {
-    DOUT1("  Saving encoded / decoded replay");
-    cmp.saveToFile(c.rawencode);
-  }
-
-  return 0;
-}
 
 int handleAnalysis(const cmdoptions &c, const int debug, slip::Parser &p) {
   DOUT1(" Analyzing");
@@ -258,43 +196,35 @@ int handleJson(const cmdoptions &c, const int debug, slip::Parser &p) {
 }
 
 int handleSingleFile(const cmdoptions &c, const int debug) {
-  int retc = 0;  //return value from compression phase
   int reta = 0;  //return value from analysis phase
   int retj = 0;  //return value from jsonoutput phase
 
   if (c.outfile || c.analysisfile) {
     DOUT1(" Parsing");
     slip::Parser p(debug);
-  if (not p.load((std::string("/tmp/") + c.infile).c_str())) {
+    if (not p.load((std::string("/tmp/") + c.infile).c_str())) {
       FAIL("    Could not load input; exiting");
       return 2;
     }
 
     if (c.outfile) {
       retj = handleJson(c,debug,p);
-      reta = handleAnalysis(c,debug,p);
     }
-  }
-
-  if (c.cfile || c.encode || c.skipsave) {
-    DOUT1(" Compressing ");
-    retc = handleCompression(c,debug);
-    if ((!c.skipsave) && c.dirmode && c.cfile && (!fileExists(c.cfile))) {
-      FAIL("  Failed to compress file, logging error");
-      ERRLOG(PATH(c.cfile).parent_path(),c.infile << " could not be compressed");
+    if (c.analysisfile) {
+      reta = handleAnalysis(c,debug,p);
     }
   }
 
   if (debug) {
     DOUT1(" Cleaning up");
   }
-  return retc+reta+retj;
+  return reta+retj;
 }
 
 int handleDirectory(const cmdoptions &c, const int debug) {
   // verify all of our input and output directories are valid (not files + proper write permissions)
-  if (!(c.cfile || c.outfile || c.analysisfile)) {
-    FAIL("No output directories specified with -j, -a, or -X");
+  if (!(c.outfile || c.analysisfile)) {
+    FAIL("No output directories specified with -j or -a");
     return -2;
   }
   if (c.outfile && (!makeDirectoryIfNotExists(c.outfile))) {
@@ -303,10 +233,6 @@ int handleDirectory(const cmdoptions &c, const int debug) {
   }
   if (c.analysisfile && (!makeDirectoryIfNotExists(c.analysisfile))) {
     FAIL("Analysis output directory '" << c.analysisfile << "' is not a valid directory");
-    return -2;
-  }
-  if (c.cfile && (!makeDirectoryIfNotExists(c.cfile))) {
-    FAIL("Compression output directory '" << c.cfile << "' is not a valid directory");
     return -2;
   }
 
@@ -318,9 +244,6 @@ int handleDirectory(const cmdoptions &c, const int debug) {
       cmdoptions c2;
       copyCommandOptions(c,c2);
       stringtoChars((entry.path()).string(),&(c2.infile));
-      if(c2.cfile) {
-        stringtoChars((PATH(c.cfile) / PATH(noext+".zlp")).string(),&(c2.cfile));
-      }
       if(c2.outfile) {
         stringtoChars((PATH(c.outfile) / PATH(base+".json")).string(),&(c2.outfile));
       }

@@ -20,7 +20,7 @@
 #include <sys/stat.h> //std::find
 #include <filesystem>
 
-#include "lzma.h"
+
 #include "picohash.h"
 #include "shiftjis.h"
 
@@ -29,7 +29,7 @@
 #define BYTE2(b1,b2)                   (*((uint16_t*)(uint8_t[]){b1,b2}))
 
 const uint64_t SLP_HEADER  = BYTE8(0x7b,0x55,0x03,0x72,0x61,0x77,0x5b,0x24); // {U.raw[$
-const uint32_t LZMA_HEADER = BYTE4(0xfd,0x37,0x7a,0x58);
+
 
 const unsigned N_HEADER_BYTES      =  15; //Header is always 15 bytes
 const unsigned MIN_EV_PAYLOAD_SIZE =  14; //Payloads, game start, pre frame, post frame, game end always defined
@@ -447,59 +447,7 @@ inline std::string floatToBinary(float f) {
   return temp;
 }
 
-// http://ptspts.blogspot.com/2011/11/how-to-simply-compress-c-string-with.html
-inline std::string compressWithLzma(const char* in, const size_t inlen, int level = 6) {
-  std::string result;
-  result.resize(inlen + (inlen >> 2) + 128);
-  size_t out_pos = 0;
-  if (LZMA_OK != lzma_easy_buffer_encode(
-      level, LZMA_CHECK_CRC32, NULL,
-      reinterpret_cast<const uint8_t*>(in), inlen,
-      reinterpret_cast<uint8_t*>(&result[0]), &out_pos, result.size()))
-    abort();
-  result.resize(out_pos);
-  return result;
-}
 
-inline std::string decompressWithLzma(const uint8_t* in, const size_t inlen) {
-  static const size_t kMemLimit = 1 << 30;  // 1 GB.
-  lzma_stream strm = LZMA_STREAM_INIT;
-  std::string result;
-  result.resize(8192);
-  size_t result_used = 0;
-  lzma_ret ret;
-  ret = lzma_stream_decoder(&strm, kMemLimit, LZMA_CONCATENATED);
-  if (ret != LZMA_OK)
-    abort();
-  size_t avail0 = result.size();
-  strm.next_in = in;
-  strm.avail_in = inlen;
-  strm.next_out = reinterpret_cast<uint8_t*>(&result[0]);
-  strm.avail_out = avail0;
-  while (true) {
-    ret = lzma_code(&strm, strm.avail_in == 0 ? LZMA_FINISH : LZMA_RUN);
-    if (ret == LZMA_STREAM_END) {
-      result_used += avail0 - strm.avail_out;
-      if (0 != strm.avail_in)  // Guaranteed by lzma_stream_decoder().
-        abort();
-      result.resize(result_used);
-      lzma_end(&strm);
-      return result;
-    }
-    if (ret != LZMA_OK)
-      abort();
-    if (strm.avail_out == 0) {
-      result_used += avail0 - strm.avail_out;
-      result.resize(result.size() << 1);
-      strm.next_out = reinterpret_cast<uint8_t*>(&result[0] + result_used);
-      strm.avail_out = avail0 = result.size() - result_used;
-    }
-  }
-}
-
-inline std::string decompressWithLzma(const char* in, const size_t inlen) {
-  return decompressWithLzma(reinterpret_cast<const uint8_t*>(&in[0]),inlen);
-}
 
 inline bool fileExists(std::string fname) {
    std::ifstream i(fname.c_str());
@@ -586,7 +534,7 @@ inline std::string md5data(unsigned char* buffer, size_t length) {
   return md5tostring(digest);
 }
 
-inline std::string md5file(std::string fname, bool compressed = false) {
+inline std::string md5file(std::string fname) {
   FILE* f = fopen(fname.c_str(),"r");
   fseek(f, 0, SEEK_END);
   size_t length = ftell(f);
@@ -595,18 +543,6 @@ inline std::string md5file(std::string fname, bool compressed = false) {
   fread(b,1,length,f);
   fclose(f);
 
-  if (compressed) {
-    std::string decomp = decompressWithLzma(b, length);
-    // Get the new file size
-    length = decomp.size();
-    // Delete the old read buffer
-    free(b);
-    // Reallocate it with more spce
-    b = (unsigned char*)malloc(length);
-    // Copy buffer from the decompressed string
-    memcpy(b,decomp.c_str(),length);
-  }
-
   std::string m = md5data(b, length);
 
   free(b);
@@ -614,9 +550,7 @@ inline std::string md5file(std::string fname, bool compressed = false) {
   return m;
 }
 
-inline std::string md5compressed(std::string fname) {
-  return md5file(fname,true);
-}
+
 
 inline bool isDirectory(const char* path) {
   struct stat s;

@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/build-slp-parser
+      - feature/remove-compression
     paths:
       - 'slp-parser/**'
       - 'lambda-layers/slippc-layer/**'

@@ -56,20 +56,6 @@ namespace slip {
     }
 
     bool status = this->_parse();
-    // if we attempted to parse an encoded replay
-    if (_is_encoded) {
-      DOUT1("  File was encoded, decoding" << +_file_size);
-      // Create a Compressor object
-      Compressor *d  = new slip::Compressor(0);
-      // Decompress the buffer
-      d->loadFromBuff(&_rb,_file_size);
-      // Save it back to the original buffer
-      d->saveToBuff(&_rb);
-      // Unset encoded state
-      _is_encoded = false;
-      // restart the parsing process
-      status = this->_parse();
-    }
     return status;
   }
 
@@ -86,9 +72,6 @@ namespace slip {
     if (not this->_parseEvents()) {
       WARN("  Failed to parse events proper");
       return false;
-    }
-    if (_is_encoded) {
-      return true;  //back out and restart the parsing process
     }
     if (not this->_parseMetadata()) {
       WARN("  Failed to parse metadata");
@@ -200,9 +183,6 @@ namespace slip {
       switch(ev_code) { //Determine the event code
         case Event::GAME_START:
           success = _parseGameStart();
-          if(_is_encoded) {
-            return true; //immediately restart if the file is encoded
-          }
           break;
         case Event::PRE_FRAME:   success = _parsePreFrame();   break;
         case Event::POST_FRAME:  success = _parsePostFrame();  break;
@@ -235,14 +215,6 @@ namespace slip {
 
   bool Parser::_parseGameStart() {
     DOUT1("  Parsing game start event at byte " << +_bp);
-
-    // if this is encoded, we need to decompress our entire read
-    //   buffer and retry parsing
-    if(_rb[_bp+O_SLP_ENC]) {
-      _is_encoded = true;
-      DOUT1("    File is encoded, decoding and retrying");
-      return true;
-    }
 
     if (_slippi_maj > 0) {
       WARN_CORRUPT("    Duplicate game start event");

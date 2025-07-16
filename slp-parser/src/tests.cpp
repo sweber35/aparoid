@@ -7,19 +7,15 @@ static const std::string STANDARDDIR   = "standard";
 // replays that cannot compress
 static const std::string CORRUPTDIR    = "corrupt";
 // replays that were compressed with old versions of compressor
-static const std::string BACKCOMPATDIR = "zlp-compat-1";
+
 
 // known file 1
 static const std::string TSLPFILE      = "3-9-0-singles-irl-summit12.slp.xz";
 // known file 2
-static const std::string TCMPFILE      = "3-7-0-singles-net.slp.xz";
-// temporary slp file
-static const std::string TZLPFILE      = "zlptest.zlp";
-// temporary zlp file
-static const std::string TUNZLPFILE    = "zlptest.slp";
 
-static const std::string tmpzlp        = (PATH(TESTDIR) / PATH(TZLPFILE)).string();
-static const std::string tmpunzlp      = (PATH(TESTDIR) / PATH(TUNZLPFILE)).string();
+
+
+
 
 typedef std::filesystem::directory_iterator f_iter;
 typedef std::filesystem::directory_entry    f_entry;
@@ -201,11 +197,6 @@ int testCorruptFiles() {
         ++errors;
       }
       delete p;
-      slip::Compressor *c = new slip::Compressor(_debug);
-      bool loaded = c->loadFromFile(path.c_str());
-      ASSERTNOERR("Compressor refuses to compress "+name,!loaded,
-        "Compressor attempted to compress corrupt file " << name);
-      delete c;
     };
   return 0;
 }
@@ -229,14 +220,14 @@ int testConsistencySanity() {
 
 int testKnownFiles() {
   std::string known1 = (PATH(TESTDIR) / PATH(STANDARDDIR) / PATH(TSLPFILE)).string();
-  std::string known2 = (PATH(TESTDIR) / PATH(STANDARDDIR) / PATH(TCMPFILE)).string();
+
   slip::Parser *p;
 
   TSUITE("Known File Parsing");
     ASSERT("File Exists",access( known1.c_str(), F_OK ) == 0,
       "File " << known1 << " does not exist");
     BAILONFAIL(1);
-    std::string test_md5 = md5compressed(known1);
+    std::string test_md5 = md5file(known1);
     ASSERT("MD5 of file is 8ba0485603d5d99cdfd8cead63ba6c1f",test_md5.compare("8ba0485603d5d99cdfd8cead63ba6c1f") == 0,
       "MD5 of file is " << test_md5);
     BAILONFAIL(1);
@@ -309,153 +300,12 @@ int testKnownFiles() {
       "Port 4 is in action " << r->player[3].frame[10000].action_post << " = " << Action::name[r->player[3].frame[10000].action_post]);
     delete p;
 
-  TSUITE("Known File Compression");
-    //Removing existing temporary zlp and slp files
-    if (fileExists(tmpzlp.c_str())) {
-      remove(tmpzlp.c_str());
-    }
-    if (fileExists(tmpunzlp.c_str())) {
-      remove(tmpunzlp.c_str());
-    }
-    ASSERT("Uncompressed File Exists",access( known2.c_str(), F_OK ) == 0,
-      "File does not exist");
-    BAILONFAIL(1);
-    std::string test_md5_2 = md5compressed(known2);
-    ASSERT("MD5 of uncompressed file is 7ea1aa5b49f87ab77a66bd8541810d50",test_md5_2.compare("7ea1aa5b49f87ab77a66bd8541810d50") == 0,
-      "MD5 of file is " << test_md5_2);
-    BAILONFAIL(1);
-    slip::Compressor *c = new slip::Compressor(_debug);
-    c->setOutputFilename(tmpzlp.c_str());
-    bool loaded = c->loadFromFile(known2.c_str());
-    ASSERTNOERR("Compressor Loads File",loaded,
-      "Compressor failed to load known file");
-    BAILONFAIL(1);
-    ASSERT("Compressor Validates File",c->validate(),
-      "Compressor failed to validate known file");
-    BAILONFAIL(1);
-    c->saveToFile(false);
-    ASSERT("Compressed File is Generated",access( tmpzlp.c_str(), F_OK ) == 0,
-      "Compressor failed to save compressed output file");
-    BAILONFAIL(1);
-    delete c;
-
-    std::string test_md5_z = md5file(tmpzlp.c_str());
-    SUGGEST("MD5 of compressed file is 8af440882c30c4ac29b935ae3d588e03",test_md5_z.compare("8af440882c30c4ac29b935ae3d588e03") == 0,
-      "MD5 of file is " << test_md5_z << ", compression algorithm may have changed");
-
-    c = new slip::Compressor(_debug);
-    ASSERT("Compressor Loads Compressed File",c->loadFromFile(tmpzlp.c_str()),
-      "Compressor failed to load compressed known file");
-    BAILONFAIL(1);
-    ASSERT("Compressor Validates Compressed File",c->validate(),
-      "Compressor failed to validate compressed known file");
-    BAILONFAIL(1);
-    c->saveToFile(false);
-    ASSERT("In-place decompressed File is Generated",access( tmpunzlp.c_str(), F_OK ) == 0,
-      "Compressor failed to save decompressed output file");
-    BAILONFAIL(1);
-    delete c;
-
-    std::string test_md5_3 = md5file(tmpunzlp.c_str());
-    ASSERT("MD5 of restored file is 7ea1aa5b49f87ab77a66bd8541810d50",test_md5_3.compare("7ea1aa5b49f87ab77a66bd8541810d50") == 0,
-      "MD5 of restored file is " << test_md5_3);
-
   return 0;
 }
 
-int testCompressionBackcompat() {
-  TSUITE("Backwards Compatible Decompression");
-    for (const f_entry & entry : f_iter(PATH(TESTDIR) / PATH(BACKCOMPATDIR))) {
-      std::string path        = entry.path().string();
-      std::string name        = entry.path().stem().string();
-      // md5 checksum is first 32 characters of filename
-      std::string test_md5_o  = name.substr(0,32);
-      // base name is rest of filename
-      name                    = name.substr(33,name.length()-33);
 
-      //Removing existing temporary zlp and slp files
-      if (fileExists(tmpunzlp.c_str())) {
-        remove(tmpunzlp.c_str());
-      }
 
-      ASSERT(name+".zlp Exists",access( path.c_str(), F_OK ) == 0,
-        name << " does not exist");
-      BAILONFAIL(1);
 
-      slip::Compressor *c = new slip::Compressor(_debug);
-      c->setOutputFilename(tmpunzlp.c_str());
-      bool loaded = c->loadFromFile(path.c_str());
-      ASSERTNOERR("Decompressor Loads "+name,loaded,
-        "Decompressor failed to load " << name);
-      BAILONFAIL(1);
-      ASSERT("Compressor Validates "+name,c->validate(),
-        "Decompressor failed to validate " << name);
-      BAILONFAIL(1);
-      c->saveToFile(false);
-      ASSERT("Compressed File for "+name+" is Generated",access( tmpunzlp.c_str(), F_OK ) == 0,
-        "Decompressor failed to save compressed output file for " << name);
-      BAILONFAIL(1);
-      delete c;
-
-      std::string test_md5_r = md5file(tmpunzlp.c_str());
-      ASSERT("MD5 of restored file for "+name+" is "+test_md5_o,test_md5_r.compare(test_md5_o) == 0,
-        "MD5 of restored file for " << name << " is " << test_md5_r);
-    }
-    return 0;
-}
-
-int testCompressionVersions() {
-  slip::Compressor *c;
-  TSUITE("All Version Compression");
-    for (const f_entry & entry : f_iter(PATH(TESTDIR) / PATH(STANDARDDIR))) {
-      std::string path = entry.path().string();
-      std::string name = entry.path().stem().string();
-      //Removing existing temporary zlp and slp files
-      if (fileExists(tmpzlp.c_str())) {
-        remove(tmpzlp.c_str());
-      }
-      if (fileExists(tmpunzlp.c_str())) {
-        remove(tmpunzlp.c_str());
-      }
-      ASSERT(name+" Exists",access( path.c_str(), F_OK ) == 0,
-        name << " does not exist");
-      NEXTONFAIL();
-      std::string test_md5_o = md5compressed(path);
-
-      c = new slip::Compressor(_debug);
-      c->setOutputFilename(tmpzlp.c_str());
-      bool loaded = c->loadFromFile((path).c_str());
-      ASSERTNOERR("Compressor Loads "+name,loaded,
-        "Compressor failed to load " << name);
-      NEXTONFAIL();
-      ASSERT("Compressor Validates "+name,c->validate(),
-        "Compressor failed to validate " << name);
-      NEXTONFAIL();
-      c->saveToFile(false);
-      ASSERT("Compressed File for "+name+" is Generated",access( tmpzlp.c_str(), F_OK ) == 0,
-        "Compressor failed to save compressed output file for " << name);
-      NEXTONFAIL();
-      delete c;
-
-      c = new slip::Compressor(_debug);
-      ASSERT("Compressor Loads Compressed "+name,c->loadFromFile(tmpzlp.c_str()),
-        "Compressor failed to load compressed " << name);
-      BAILONFAIL(1);
-      ASSERT("Compressor Validates Compressed "+name,c->validate(),
-        "Compressor failed to validate compressed " << name);
-      BAILONFAIL(1);
-      c->saveToFile(false);
-      ASSERT("In-place Decompressed File is Generated for "+name,access( tmpunzlp.c_str(), F_OK ) == 0,
-        "Compressor failed to save decompressed output file for " << name);
-      BAILONFAIL(1);
-      delete c;
-
-      std::string test_md5_r = md5file(tmpunzlp.c_str());
-      ASSERT("MD5 of restored file for "+name+" is "+test_md5_o,test_md5_r.compare(test_md5_o) == 0,
-        "MD5 of restored file for " << name << " is " << test_md5_r);
-    }
-  return 0;
-}
 
 int runtests(int argc, char** argv) {
   if (cmdOptionExists(argv, argv+argc, "-h")) {
@@ -484,11 +334,7 @@ int runtests(int argc, char** argv) {
   testTestFiles();
   testKnownFiles();
   testCorruptFiles();
-  testCompressionBackcompat();
   testConsistencySanity();
-  if(testlevel >= 1) {
-    testCompressionVersions();
-  }
   TESTRESULTS();
 
   return 0;
