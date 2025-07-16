@@ -38,38 +38,7 @@ namespace slip {
     myfile.read(_rb,_file_size);
     myfile.close();
 
-    // Check if we have a compressed .zlp file
-    bool is_compressed = same4(&_rb[0],LZMA_HEADER);
-    if (is_compressed) {
-      DOUT1("  Decompressing file");
-      // Decompress the read buffer
-      std::string decomp = decompressWithLzma(_rb, _file_size);
-      // Get the new file size
-      _file_size    = decomp.size();
-      // Delete the old read buffer
-      delete[] _rb;
-      // Reallocate it with more spce
-      _rb = new char[_file_size];
-      // Copy buffer from the decompressed string
-      memcpy(_rb,decomp.c_str(),_file_size);
-      DOUT1("  Decompressed File Size: " << +_file_size);
-    }
-
     bool status = this->_parse();
-    // if we attempted to parse an encoded replay
-    if (_is_encoded) {
-      DOUT1("  File was encoded, decoding" << +_file_size);
-      // Create a Compressor object
-      Compressor *d  = new slip::Compressor(0);
-      // Decompress the buffer
-      d->loadFromBuff(&_rb,_file_size);
-      // Save it back to the original buffer
-      d->saveToBuff(&_rb);
-      // Unset encoded state
-      _is_encoded = false;
-      // restart the parsing process
-      status = this->_parse();
-    }
     return status;
   }
 
@@ -86,9 +55,6 @@ namespace slip {
     if (not this->_parseEvents()) {
       WARN("  Failed to parse events proper");
       return false;
-    }
-    if (_is_encoded) {
-      return true;  //back out and restart the parsing process
     }
     if (not this->_parseMetadata()) {
       WARN("  Failed to parse metadata");
@@ -200,9 +166,6 @@ namespace slip {
       switch(ev_code) { //Determine the event code
         case Event::GAME_START:
           success = _parseGameStart();
-          if(_is_encoded) {
-            return true; //immediately restart if the file is encoded
-          }
           break;
         case Event::PRE_FRAME:   success = _parsePreFrame();   break;
         case Event::POST_FRAME:  success = _parsePostFrame();  break;
@@ -235,14 +198,6 @@ namespace slip {
 
   bool Parser::_parseGameStart() {
     DOUT1("  Parsing game start event at byte " << +_bp);
-
-    // if this is encoded, we need to decompress our entire read
-    //   buffer and retry parsing
-    if(_rb[_bp+O_SLP_ENC]) {
-      _is_encoded = true;
-      DOUT1("    File is encoded, decoding and retrying");
-      return true;
-    }
 
     if (_slippi_maj > 0) {
       WARN_CORRUPT("    Duplicate game start event");
@@ -791,15 +746,24 @@ namespace slip {
   }
 
   void Parser::playerFramesAsParquet() {
-    _replay.playerFramesAsParquet();
+    arrow::Status status = _replay.playerFramesAsParquet();
+    if (!status.ok()) {
+      std::cerr << "Error writing player frames to Parquet: " << status.ToString() << std::endl;
+    }
   }
 
   void Parser::itemFramesAsParquet() {
-    _replay.itemFramesAsParquet();
+    arrow::Status status = _replay.itemFramesAsParquet();
+    if (!status.ok()) {
+      std::cerr << "Error writing item frames to Parquet: " << status.ToString() << std::endl;
+    }
   }
 
   void Parser::fodPlatformChangesAsParquet() {
-    _replay.fodPlatformChangesAsParquet();
+    arrow::Status status = _replay.fodPlatformChangesAsParquet();
+    if (!status.ok()) {
+      std::cerr << "Error writing FOD platform changes to Parquet: " << status.ToString() << std::endl;
+    }
   }
 
   std::string Parser::settingsAsJson() {

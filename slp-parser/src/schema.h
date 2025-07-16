@@ -14,7 +14,7 @@ namespace slip {
     const unsigned O_SLP_MAJ        = 0x01;
     const unsigned O_SLP_MIN        = 0x02;
     const unsigned O_SLP_REV        = 0x03;
-    const unsigned O_SLP_ENC        = 0x04;  //Whether the file is encoded with this program
+    
     const unsigned O_GAMEBITS_1     = 0x05;
     const unsigned O_GAMEBITS_2     = 0x06;
     const unsigned O_GAMEBITS_3     = 0x07;

@@ -8,7 +8,6 @@ src/parser.h \
 src/replay.h \
 src/analyzer.h \
 src/analysis.h \
-src/compressor.h \
 src/enums.h \
 src/schema.h \
 src/gecko-legacy.h \
@@ -21,15 +20,13 @@ OBJS += \
 build/parser.o \
 build/replay.o \
 build/analyzer.o \
-build/analysis.o \
-build/compressor.o
+build/analysis.o
 
 CPP_DEPS += \
 build/parser.d \
 build/replay.d \
 build/analyzer.d \
-build/analysis.d \
-build/compressor.d
+build/analysis.d
 
 OBJS_MAIN = ${OBJS} build/main.o
 CPP_DEPS_MAIN = ${CPP_DEPS} build/main.d
@@ -48,12 +45,8 @@ OLEVEL := -O3
 
 all: directories base
 
-base: INCLUDES += -I/usr/include/lzma
-base: LIBS += -llzma
 base: slippc
 
-test: INCLUDES += -I/usr/include/lzma
-test: LIBS += -llzma
 test: slippc-tests
 
 gui: GUI = -DGUI_ENABLED=1
@@ -64,10 +57,9 @@ static: LIBS += -L/usr/local/lib -static \
   -lparquet \
   -larrow \
   -larrow_bundled_dependencies \
-  -lz -lzstd -llzma -lbz2 -llz4 -lpthread -ldl
+  -lz -lzstd -lbz2 -llz4 -lpthread -ldl
 static: slippc
 
-statictest: LIBS += -L ./lib-lin -static -llzma
 statictest: slippc-tests
 
 staticgui: GUI = -DGUI_ENABLED=1
