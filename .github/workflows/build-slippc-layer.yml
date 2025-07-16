@@ -36,6 +36,9 @@ jobs:
           load: true
           platforms: linux/amd64
 
+      - name: Create output directory
+        run: mkdir -p lambda-layers/slippc-layer/bin
+
       - name: Copy binary out of container
         run: |
           CONTAINER_ID=$(docker create slippc-builder)
