@@ -97,10 +97,10 @@ struct SlippiItem {
   SlippiItemFrame* frame      = nullptr;     //Pointer to array of data for item's individual frames
 };
 
-struct SlippiFodPlatform {
+struct SlippiFodPlatformFrame {
   int32_t          frame           = 0;
-  uint8_t          platform        = 0; //Which platform has moved. (0 = Right, 1 = Left)
-  float            platform_height = 0; //The platform's new height
+  float            left_height     = 0;  //Left platform height for this frame
+  float            right_height    = 0;  //Right platform height for this frame
 };
 
 struct SlippiPlayer {
@@ -192,12 +192,12 @@ struct SlippiReplay {
   uint8_t         language            = 0;          //Language option (0 = Japanese, 1 = English)
   SlippiPlayer    player[8]           = {};         //Array of SlippiPlayers (1 main + follower for each port)
   SlippiItem      item[MAX_ITEMS]     = {};         //Array of SlippiItems (can track up to MAX_ITEMS per game)
-  std::vector<SlippiFodPlatform> platform_events = {};//Array of SlippiFodPlatform events which represents every time either FoD platform changes height
+  std::vector<SlippiFodPlatformFrame> platform_frames = {};//Array of SlippiFodPlatformFrame for every frame when stage = 2 (Fountain of Dreams)
   void setFrames(int32_t max_frames);
   void cleanup();
   arrow::Status playerFramesAsParquet();
   arrow::Status itemFramesAsParquet();
-  arrow::Status fodPlatformChangesAsParquet();
+  arrow::Status fodPlatformFramesAsParquet();
   std::string settingsAsJson();
   std::string matchSettingsAsJson(const std::string& filename);
   std::string playerSettingsAsJson();

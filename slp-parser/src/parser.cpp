@@ -344,6 +344,12 @@ namespace slip {
     _max_frames = getMaxNumFrames();
     _replay.setFrames(_max_frames);
     DOUT1("    Estimated " << _max_frames << " gameplay frames (" << (_replay.frame_count) << " total frames)");
+    
+    // Initialize platform frames for Fountain of Dreams (stage = 2)
+    if (_replay.stage == 2) {
+      _initializePlatformFrames();
+    }
+    
     return true;
   }
 
@@ -563,10 +569,47 @@ namespace slip {
     uint8_t platform = _rb[_bp+O_PLATFORM];
     float platform_height = readBE4F(&_rb[_bp+O_PLAT_HEIGHT]);
 
-    SlippiFodPlatform event = { f, platform, platform_height };
-    _replay.platform_events.push_back(event);
+    // Update platform frames data for Fountain of Dreams (stage = 2)
+    if (_replay.stage == 2) {
+      _updatePlatformFrames(f, platform, platform_height);
+    }
 
     return true;
+  }
+
+  void Parser::_updatePlatformFrames(int32_t frame, uint8_t platform, float height) {
+    // Find or create the platform frame entry for this frame
+    SlippiFodPlatformFrame* frame_data = nullptr;
+    
+    // Look for existing frame data
+    for (auto& pf : _replay.platform_frames) {
+      if (pf.frame == frame) {
+        frame_data = &pf;
+        break;
+      }
+    }
+    
+    // If not found, create new frame data
+    if (!frame_data) {
+      SlippiFodPlatformFrame new_frame = { frame, 20.0f, 27.44186047f }; // Default heights from constants.ts
+      _replay.platform_frames.push_back(new_frame);
+      frame_data = &_replay.platform_frames.back();
+    }
+    
+    // Update the appropriate platform height
+    if (platform == 0) { // Right platform
+      frame_data->right_height = height;
+    } else if (platform == 1) { // Left platform
+      frame_data->left_height = height;
+    }
+  }
+
+  void Parser::_initializePlatformFrames() {
+    // Initialize platform frames for every frame with default heights
+    for (int32_t frame = 0; frame < _replay.frame_count; ++frame) {
+      SlippiFodPlatformFrame frame_data = { frame, 20.0f, 27.44186047f }; // Default heights from constants.ts
+      _replay.platform_frames.push_back(frame_data);
+    }
   }
 
   bool Parser::_parseGameEnd() {
@@ -769,10 +812,10 @@ namespace slip {
     }
   }
 
-  void Parser::fodPlatformChangesAsParquet() {
-    arrow::Status status = _replay.fodPlatformChangesAsParquet();
+  void Parser::fodPlatformFramesAsParquet() {
+    arrow::Status status = _replay.fodPlatformFramesAsParquet();
     if (!status.ok()) {
-      std::cerr << "Error writing FOD platform changes to Parquet: " << status.ToString() << std::endl;
+      std::cerr << "Error writing FOD platform frames to Parquet: " << status.ToString() << std::endl;
     }
   }
 
@@ -816,7 +859,7 @@ namespace slip {
 
     playerFramesAsParquet();
     itemFramesAsParquet();
-    fodPlatformChangesAsParquet();
+    fodPlatformFramesAsParquet();
 
   }
 
