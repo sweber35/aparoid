@@ -49,7 +49,7 @@ async function cacheReplayJson(key, payload) {
     }));
 }
 
-async function runAthenaQuery(query) {
+async function runAthenaQuery(query, usePagination = false) {
 
     const startCommand = new StartQueryExecutionCommand({
         QueryString: query,
@@ -82,28 +82,69 @@ async function runAthenaQuery(query) {
         }
     }
 
-    const result = await athena.send(new GetQueryResultsCommand({
-        QueryExecutionId: queryExecutionId,
-    }));
+    if (!usePagination) {
+        // Single result for small queries
+        const result = await athena.send(new GetQueryResultsCommand({
+            QueryExecutionId: queryExecutionId,
+        }));
 
-    console.log('Raw Athena result:', JSON.stringify(result, null, 2));
+        console.log('Raw Athena result:', JSON.stringify(result, null, 2));
 
-    const rows = result.ResultSet?.Rows || [];
-    const headers = rows[0]?.Data?.map(d => d.VarCharValue || '') || [];
+        const rows = result.ResultSet?.Rows || [];
+        const headers = rows[0]?.Data?.map(d => d.VarCharValue || '') || [];
 
-    console.log('Headers:', headers);
-    console.log('Rows count:', rows.length);
-    console.log('Rows:', rows);
+        console.log('Headers:', headers);
+        console.log('Rows count:', rows.length);
+        console.log('Rows:', rows);
 
-    const parsedResults = rows.slice(1).map(row =>
-        row.Data?.reduce((obj, val, idx) => {
-            obj[headers[idx]] = val?.VarCharValue || '';
-            return obj;
-        }, {})
-    );
+        const parsedResults = rows.slice(1).map(row =>
+            row.Data?.reduce((obj, val, idx) => {
+                obj[headers[idx]] = val?.VarCharValue || '';
+                return obj;
+            }, {})
+        );
 
-    console.log('Parsed results:', parsedResults);
-    return parsedResults;
+        console.log('Parsed results:', parsedResults);
+        return parsedResults;
+    } else {
+        // Paginated results for large queries
+        let allResults = [];
+        let nextToken = null;
+        let headers = null;
+        
+        do {
+            const result = await athena.send(new GetQueryResultsCommand({
+                QueryExecutionId: queryExecutionId,
+                NextToken: nextToken,
+            }));
+
+            const rows = result.ResultSet?.Rows || [];
+            
+            // Get headers only from the first page
+            if (!headers) {
+                headers = rows[0]?.Data?.map(d => d.VarCharValue || '') || [];
+                console.log('Headers:', headers);
+            }
+
+            // Parse data rows (skip header row on first page, no header row on subsequent pages)
+            const dataRows = nextToken ? rows : rows.slice(1);
+            const parsedResults = dataRows.map(row =>
+                row.Data?.reduce((obj, val, idx) => {
+                    obj[headers[idx]] = val?.VarCharValue || '';
+                    return obj;
+                }, {})
+            );
+
+            allResults = allResults.concat(parsedResults);
+            nextToken = result.NextToken;
+            
+            console.log(`Fetched ${parsedResults.length} rows, total so far: ${allResults.length}`);
+            
+        } while (nextToken);
+
+        console.log('Total rows fetched:', allResults.length);
+        return allResults;
+    }
 }
 
 /**
@@ -142,12 +183,14 @@ exports.handler = async (event) => {
 
     try {
         const { matchId, frameStart, frameEnd } = JSON.parse(event.body);
-        console.log('Request parameters:', { matchId, frameStart, frameEnd });
+        console.log('Request parameters:', { matchId, frameStart, frameEnd, frameStartType: typeof frameStart, frameEndType: typeof frameEnd });
+        console.log('Request body:', event.body);
+        console.log('Parsed request body:', JSON.parse(event.body));
         
-        if (!matchId || !frameStart || !frameEnd) {
+        if (!matchId) {
             return {
                 statusCode: 400,
-                body: JSON.stringify({ error: 'Missing matchId, frameStart, or frameEnd' }),
+                body: JSON.stringify({ error: 'Missing matchId' }),
                 headers: {
                     'Access-Control-Allow-Origin': '*',
                     'Access-Control-Allow-Headers': 'Content-Type',
@@ -155,8 +198,15 @@ exports.handler = async (event) => {
                 },
             };
         }
+        
+        // If frameStart and frameEnd are not provided, we're in debug mode and should return the full replay
+        const isFullReplayRequest = frameStart === undefined || frameEnd === undefined || frameStart === null || frameEnd === null;
+        console.log('Is full replay request:', isFullReplayRequest, 'frameStart:', frameStart, 'frameEnd:', frameEnd);
+        console.log('Request type:', isFullReplayRequest ? 'FULL_REPLAY_DEBUG_MODE' : 'FRAME_RANGE_REQUEST');
 
-        const cacheKey = getReplayCacheKey(matchId, frameStart, frameEnd);
+        const cacheKey = isFullReplayRequest 
+            ? `replays/${matchId}-full.json`
+            : getReplayCacheKey(matchId, frameStart, frameEnd);
         const cachedReplay = await tryGetCachedReplay(cacheKey);
 
         if (cachedReplay) {
@@ -230,15 +280,48 @@ exports.handler = async (event) => {
             }
         });
 
-        // frames
-        const framesQuery = `
-            SELECT *
-            FROM frames
-            WHERE match_id = '${ matchId }'
-              AND frame_number BETWEEN ${frameStart} AND ${frameEnd}
-            ORDER BY frame_number ASC
-        `;
-        const framesResult = await runAthenaQuery(framesQuery);
+        // Handle frame range for query
+        let framesQuery;
+        let relativeFrameStart, relativeFrameEnd;
+        let maxFrameNumber = null;
+        
+        if (isFullReplayRequest) {
+            // For full replay, get frames with a reasonable limit to prevent huge responses
+            const maxFrames = 10000; // Limit to 10k frames for full replay
+            framesQuery = `
+                SELECT *
+                FROM frames
+                WHERE match_id = '${ matchId }'
+                ORDER BY frame_number ASC
+                LIMIT ${maxFrames}
+            `;
+            console.log('Full replay request - getting up to', maxFrames, 'frames');
+        } else {
+            // Convert SLP frame numbers to relative frame numbers
+            relativeFrameStart = Number(frameStart) + 123;
+            relativeFrameEnd = Number(frameEnd) + 123;
+            console.log('Frame conversion:', { frameStart, frameEnd, relativeFrameStart, relativeFrameEnd });
+            
+            framesQuery = `
+                SELECT *
+                FROM frames
+                WHERE match_id = '${ matchId }'
+                  AND frame_number BETWEEN ${relativeFrameStart} AND ${relativeFrameEnd}
+                ORDER BY frame_number ASC
+            `;
+        }
+        console.log('framesQuery', framesQuery);
+        const framesResult = await runAthenaQuery(framesQuery, isFullReplayRequest);
+        console.log('framesResult count:', framesResult.length);
+        console.log('framesResult sample:', framesResult.slice(0, 2));
+        if (framesResult.length > 0) {
+            const frameNumbers = framesResult.map(f => Number(f.frame_number));
+            maxFrameNumber = Math.max(...frameNumbers);
+            console.log('Frame number range in database:', {
+                min: Math.min(...frameNumbers),
+                max: maxFrameNumber
+            });
+        }
 
         const itemsQuery = `
             SELECT
@@ -258,10 +341,21 @@ exports.handler = async (event) => {
                 owner
             FROM items
             WHERE match_id = '${matchId}'
-              AND frame BETWEEN ${frameStart} AND ${frameEnd}
+            ${!isFullReplayRequest ? `AND frame BETWEEN ${relativeFrameStart} AND ${relativeFrameEnd}` : `AND frame <= ${maxFrameNumber}`}
+            ORDER BY frame ASC
         `;
         console.log('itemsQuery', itemsQuery);
-        const itemFrames = await runAthenaQuery(itemsQuery);
+        console.log('Max frame number for items query:', maxFrameNumber);
+        const itemFrames = await runAthenaQuery(itemsQuery, isFullReplayRequest);
+        console.log(JSON.stringify('itemFrames', itemFrames));
+        console.log('itemFrames count:', itemFrames.length);
+        if (itemFrames.length > 0) {
+            console.log('Item frame number range:', {
+                min: Math.min(...itemFrames.map(f => Number(f.frameNumber))),
+                max: Math.max(...itemFrames.map(f => Number(f.frameNumber)))
+            });
+            console.log('Sample item frames:', itemFrames.slice(0, 3));
+        }
 
         const platformsQuery = `
             SELECT *
@@ -270,8 +364,9 @@ exports.handler = async (event) => {
                      SELECT *
                      FROM platforms
                      WHERE match_id = '${matchId}'
-                       AND frame BETWEEN ${frameStart} AND ${frameEnd}
+                     ${!isFullReplayRequest ? `AND frame BETWEEN ${relativeFrameStart} AND ${relativeFrameEnd}` : ''}
 
+                     ${!isFullReplayRequest ? `
                      UNION ALL
 
                      -- Most recent right platform change before the range
@@ -285,7 +380,7 @@ exports.handler = async (event) => {
                               FROM platforms
                               WHERE match_id = '${matchId}'
                                 AND platform = 0
-                                AND frame < ${frameStart}
+                                AND frame < ${relativeFrameStart}
                               ORDER BY frame DESC
                                   LIMIT 1
                           )
@@ -303,15 +398,16 @@ exports.handler = async (event) => {
                               FROM platforms
                               WHERE match_id = '${matchId}'
                                 AND platform = 1
-                                AND frame < ${frameStart}
+                                AND frame < ${relativeFrameStart}
                               ORDER BY frame DESC
                                   LIMIT 1
                           )
+                     ` : ''}
                  ) t
             ORDER BY frame;
         `;
         console.log('platformsQuery', platformsQuery);
-        const platformFrames = await runAthenaQuery(platformsQuery);
+        const platformFrames = await runAthenaQuery(platformsQuery, isFullReplayRequest);
         console.log('platformFrames:', platformFrames);
 
         const groupedFrames = new Map();
@@ -323,19 +419,33 @@ exports.handler = async (event) => {
             }
             groupedFrames.get(f).push(frame);
         }
+        
+        console.log('groupedFrames size:', groupedFrames.size);
+        console.log('groupedFrames keys:', Array.from(groupedFrames.keys()).slice(0, 10));
+        if (groupedFrames.size > 0) {
+            console.log('First frame group sample:', groupedFrames.get(Array.from(groupedFrames.keys())[0]));
+        }
 
         let frames = [];
+        console.log('Starting frame processing loop');
 
-        for (const [frameNumber, frameGroup] of groupedFrames.entries()) {
+        // Sort the frame numbers to ensure correct order
+        const sortedFrameNumbers = Array.from(groupedFrames.keys()).sort((a, b) => Number(a) - Number(b));
+        console.log('Sorted frame numbers:', sortedFrameNumbers.slice(0, 10));
+
+        for (const frameNumber of sortedFrameNumbers) {
+            const frameGroup = groupedFrames.get(frameNumber);
             const players = [];
             const items = [];
+            
+            // console.log('Processing frame:', { frameNumber, frameGroupLength: frameGroup.length });
 
             for (const frame of frameGroup) {
                 players.push({
-                    frameNumber: Number(frame.frame_number),
+                    frameNumber: frameNumber,
                     playerIndex: Number(frame.player_index),
                     inputs: {
-                        frameNumber: Number(frame.frame_number),
+                        frameNumber: frameNumber,
                         playerIndex: Number(frame.player_index),
                         isNana: frame.follower === 'true',
                         physical: {
@@ -375,7 +485,7 @@ exports.handler = async (event) => {
                         }
                     },
                     state: {
-                        frameNumber: Number(frame.frame_number),
+                        frameNumber: frameNumber,
                         playerIndex: Number(frame.player_index),
                         isNana: frame.follower === 'true',
                         internalCharacterId: Number(frame.char_id),
@@ -413,10 +523,13 @@ exports.handler = async (event) => {
             players.sort((a, b) => a.playerIndex - b.playerIndex);
 
             let relevantItemFrames = itemFrames.filter(itemFrame => itemFrame.frameNumber === frameNumber);
+            if (relevantItemFrames.length > 0) {
+                console.log(`Frame ${frameNumber} has ${relevantItemFrames.length} items`);
+            }
             for (const itemFrame of relevantItemFrames) {
                 items.push({
                     matchId: itemFrame.matchId,
-                    frameNumber: Number(itemFrame.frameNumber),
+                    frameNumber: frameNumber,
                     typeId: Number(itemFrame.typeId),
                     state: Number(itemFrame.state),
                     facingDirection: Number(itemFrame.facingDirection),
@@ -436,27 +549,29 @@ exports.handler = async (event) => {
 
             // Stage state
             const stageState = {
-                frameNumber: Number(frameNumber),
+                frameNumber: frameNumber,
                 fodLeftPlatformHeight: Number(getPlatformHeightAtFrame(
-                    platformFrames.filter(frame => frame.platform == 1).sort((a, b) => a.frame - b.frame),
-                    frameNumber + 122,
+                    platformFrames.filter(frame => frame.platform == 1).map(frame => ({ ...frame, frame: frame.frame - 123 })).sort((a, b) => a.frame - b.frame),
+                    frameNumber,
                     20.0
                 )),
                 fodRightPlatformHeight: Number(getPlatformHeightAtFrame(
-                    platformFrames.filter(frame => frame.platform == 0).sort((a, b) => a.frame - b.frame),
-                    frameNumber + 122,
+                    platformFrames.filter(frame => frame.platform == 0).map(frame => ({ ...frame, frame: frame.frame - 123 })).sort((a, b) => a.frame - b.frame),
+                    frameNumber,
                     27.44186047
                 ))
             };
 
             frames.push({
-                frameNumber: Number(frameNumber),
+                frameNumber: frameNumber,
                 randomSeed: Number(frameGroup[0].seed), // should be the same for all players in that frame
                 players,
                 items,
                 stage: stageState
             });
         }
+        
+        console.log('Final frames array length:', frames.length);
 
         const gameEnding = {
             ...gameEndingDefaults
@@ -468,7 +583,10 @@ exports.handler = async (event) => {
                 playerSettings
             },
             frames,
-            ending: gameEnding
+            ending: gameEnding,
+            ...(isFullReplayRequest && frames.length >= 10000 && {
+                warning: `Full replay truncated to first ${frames.length} frames due to size limits`
+            })
         }
 
         await cacheReplayJson(cacheKey, replayData);
