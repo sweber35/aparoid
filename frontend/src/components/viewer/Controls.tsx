@@ -108,7 +108,6 @@ export function Controls() {
       case "D":
         toggleDebug();
         toggleFullReplayDebug();
-        console.log('Debug modes toggled - Full replay debug:', getFullReplayDebugState());
         break;
       case "f":
       case "F":

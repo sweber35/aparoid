@@ -129,6 +129,13 @@ export function adjust(delta: number): void {
     setReplayState("frame", (f) => wrapFrame(replayState, f + delta));
 }
 
+export function loadReplayData(replayData: ReplayData): void {
+    setReplayState("replayData", replayData);
+    setReplayState("renderDatas", []);
+    setReplayState("frame", 0);
+    start();
+}
+
 const [running, start, stop] = createRAF(
     targetFPS(
         () =>
@@ -144,7 +151,9 @@ createEffect(
     on(
         () => currentSelectionStore()?.data.selectedFileAndStub?.[0],
         (selectedData) => {
-            if (!selectedData) return;
+            if (!selectedData) {
+                return;
+            }
 
             setReplayState("replayData", selectedData);
             setReplayState("renderDatas", []);
@@ -160,7 +169,10 @@ createEffect(() => {
     const firstStub = store?.data.stubs?.[0];
     if (!store || !firstStub) return;
 
-    store.select(firstStub);
+    // Only auto-select if there's no current selection
+    if (!store.data.selectedFileAndStub) {
+        store.select(firstStub);
+    }
 });
 
 const animationResources = [];
@@ -249,6 +261,65 @@ export function computeRenderData(
   ): RenderData {
     const playerState = (playerUpdate as PlayerUpdateWithNana)[isNana ? "nanaState" : "state"];
     const playerInputs = (playerUpdate as PlayerUpdateWithNana)[isNana ? "nanaInputs" : "inputs"];
+    
+    // Safety check: ensure playerInputs exists
+    if (!playerInputs || !playerInputs.processed) {
+        console.warn('Player inputs missing for player', playerUpdate.playerIndex);
+        // Return a minimal render data to prevent crashes
+        return {
+            playerState,
+            playerInputs: {
+                frameNumber: playerUpdate.frameNumber,
+                playerIndex: playerUpdate.playerIndex,
+                isNana,
+                physical: {
+                    a: false, b: false, x: false, y: false, z: false, start: false,
+                    dPadLeft: false, dPadRight: false, dPadDown: false, dPadUp: false,
+                    rTriggerAnalog: 0, rTriggerDigital: false, lTriggerAnalog: 0, lTriggerDigital: false
+                },
+                processed: {
+                    a: false, b: false, x: false, y: false, z: false, start: false,
+                    dPadLeft: false, dPadRight: false, dPadDown: false, dPadUp: false,
+                    rTriggerDigital: false, lTriggerDigital: false,
+                    joystickX: 0, joystickY: 0, cStickX: 0, cStickY: 0, anyTrigger: 0
+                }
+            },
+            playerSettings: replayState.replayData!.settings.playerSettings.find(s => s.playerIndex === playerUpdate.playerIndex) || {
+                playerIndex: playerUpdate.playerIndex,
+                port: playerUpdate.playerIndex + 1,
+                externalCharacterId: 0,
+                internalCharacterIds: [0],
+                playerType: 0,
+                startStocks: 4,
+                costumeIndex: 0,
+                teamShade: 0,
+                handicap: 0,
+                teamId: 0,
+                staminaMode: false,
+                silentCharacter: false,
+                lowGravity: false,
+                invisible: false,
+                blackStockIcon: false,
+                metal: false,
+                startGameOnWarpPlatform: false,
+                rumbleEnabled: true,
+                cpuLevel: 0,
+                offenseRatio: 1,
+                defenseRatio: 1,
+                modelScale: 1,
+                controllerFix: "None",
+                nametag: "",
+                displayName: "",
+                connectCode: ""
+            },
+            path: "",
+            innerColor: "blue",
+            outerColor: "black",
+            transforms: [`translate(${playerState.xPosition} ${playerState.yPosition})`],
+            animationName: "Wait",
+            characterData: { scale: 1, shieldOffset: [0, 0], shieldSize: 10, animationMap: new Map(), specialsMap: new Map() }
+        };
+    }
     const playerSettings = replayState
       .replayData!.settings.playerSettings.filter(Boolean)
       .find((settings) => settings.playerIndex === playerUpdate.playerIndex)!;
@@ -266,7 +337,6 @@ export function computeRenderData(
       : playerState;
   
     const actionName = actionNameById[playerState.actionStateId];
-    if (playerState.playerIndex == 1) console.log('action:', actionName, playerState.actionStateId);
     const characterData = actionMapByInternalId[playerState.internalCharacterId];
     const animationName =
         characterData.animationMap.get(actionName) ||

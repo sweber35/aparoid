@@ -18,7 +18,6 @@ export function PlayerBadge(props: { port: number }) {
 }
 
 export function StageBadge(props: { stageId: number }) {
-  console.log('StageBadge stageId:', props.stageId);
   
   const abbreviation = createMemo(() => {
     return (

@@ -5,12 +5,9 @@ import { ReplayData } from "~/common/types";
 import { ReplayStub } from "~/state/awsSelectionStore";
 
 export function Sidebar() {
-    const store = currentSelectionStore();
     const [isImportModalOpen, setIsImportModalOpen] = createSignal(false);
-    console.log('Sidebar render - currentSelectionStore:', store);
-    console.log('Store data:', store?.data);
     
-    async function handleFileImport(event: Event) {
+    async function handleFileImport(event: Event, store: any) {
         const input = event.target as HTMLInputElement;
         const file = input.files?.[0];
         if (!file) return;
@@ -33,18 +30,8 @@ export function Sidebar() {
                 category: undefined // Imported replays don't belong to a specific category
             };
 
-            // Add frameIndexByNumber for efficient frame lookup
-            const replayDataWithIndex: ReplayData = {
-                ...replayData,
-                frameIndexByNumber: Object.fromEntries(
-                    replayData.frames.map((frame, index) => [frame.frameNumber, index])
-                )
-            };
-
-            // Directly set the replay data in the store
-            store?.setSelectionState("selectedFileAndStub", [replayDataWithIndex, stub]);
-            
-            console.log('Imported replay:', replayDataWithIndex);
+            // Set the replay data in the store
+            store?.setSelectionState("selectedFileAndStub", [replayData, stub]);
             
             // Close the modal
             setIsImportModalOpen(false);
@@ -65,7 +52,11 @@ export function Sidebar() {
                 keyed
             >
                 {(store) => {
-                    console.log('Show children render - store:', store);
+                
+                    
+                    // Create a closure that captures the store
+                    const handleFileImportWithStore = (event: Event) => handleFileImport(event, store);
+                    
                     return (
                         <>
                             <div class="hidden h-full w-96 overflow-y-auto py-4 pl-4 lg:block">
@@ -91,48 +82,48 @@ export function Sidebar() {
                                 <Replays selectionStore={store} />
                                 {/* <Clips /> */}
                             </div>
+                            
+                            {/* Import Modal */}
+                            <Show when={isImportModalOpen()}>
+                                <div class="fixed inset-0 z-50 flex items-center justify-center">
+                                    {/* Backdrop */}
+                                    <div 
+                                        class="fixed inset-0 bg-black bg-opacity-50"
+                                        onClick={() => setIsImportModalOpen(false)}
+                                    ></div>
+                                    
+                                    {/* Modal */}
+                                    <div class="relative bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                                        <div class="text-lg font-semibold mb-4">Import JSON Replay</div>
+                                        
+                                        <div class="text-sm text-slate-600 mb-4">
+                                            Select a JSON replay file to import. This will load the full replay data directly into the viewer.
+                                        </div>
+                                        
+                                        <label class="cursor-pointer bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm inline-block">
+                                            Choose File
+                                            <input
+                                                type="file"
+                                                accept=".json"
+                                                class="hidden"
+                                                onChange={handleFileImportWithStore}
+                                            />
+                                        </label>
+                                        
+                                        <div class="flex justify-end mt-6">
+                                            <button
+                                                onClick={() => setIsImportModalOpen(false)}
+                                                class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded text-sm"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Show>
                         </>
                     );
                 }}
-            </Show>
-
-            {/* Import Modal */}
-            <Show when={isImportModalOpen()}>
-                <div class="fixed inset-0 z-50 flex items-center justify-center">
-                    {/* Backdrop */}
-                    <div 
-                        class="fixed inset-0 bg-black bg-opacity-50"
-                        onClick={() => setIsImportModalOpen(false)}
-                    ></div>
-                    
-                    {/* Modal */}
-                    <div class="relative bg-white rounded-lg p-6 max-w-md w-full mx-4">
-                        <div class="text-lg font-semibold mb-4">Import JSON Replay</div>
-                        
-                        <div class="text-sm text-slate-600 mb-4">
-                            Select a JSON replay file to import. This will load the full replay data directly into the viewer.
-                        </div>
-                        
-                        <label class="cursor-pointer bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm inline-block">
-                            Choose File
-                            <input
-                                type="file"
-                                accept=".json"
-                                class="hidden"
-                                onChange={handleFileImport}
-                            />
-                        </label>
-                        
-                        <div class="flex justify-end mt-6">
-                            <button
-                                onClick={() => setIsImportModalOpen(false)}
-                                class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded text-sm"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                </div>
             </Show>
         </>
     );
