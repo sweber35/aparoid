@@ -148,6 +148,11 @@ exports.handler = async (event) => {
             return {
                 statusCode: 400,
                 body: JSON.stringify({ error: 'Missing matchId, frameStart, or frameEnd' }),
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Headers': 'Content-Type',
+                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET',
+                },
             };
         }
 
@@ -253,7 +258,7 @@ exports.handler = async (event) => {
                 owner
             FROM items
             WHERE match_id = '${matchId}'
-              AND frame BETWEEN ${frameStart + 123} AND ${frameEnd + 123}
+              AND frame BETWEEN ${frameStart} AND ${frameEnd}
         `;
         console.log('itemsQuery', itemsQuery);
         const itemFrames = await runAthenaQuery(itemsQuery);
@@ -407,7 +412,6 @@ exports.handler = async (event) => {
             // Sort players by playerIndex to ensure correct order
             players.sort((a, b) => a.playerIndex - b.playerIndex);
 
-            // Items for the frame
             let relevantItemFrames = itemFrames.filter(itemFrame => itemFrame.frameNumber === frameNumber);
             for (const itemFrame of relevantItemFrames) {
                 items.push({
@@ -484,6 +488,11 @@ exports.handler = async (event) => {
         return {
             statusCode: 500,
             body: JSON.stringify({ error: err.message || 'Internal error' }),
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET',
+            },
         };
     }
 };
