@@ -535,15 +535,6 @@ namespace slip {
         _replay.item[id].frame[f].owner    = int8_t(_rb[_bp+O_ITEM_OWNER]);
       }
       
-      // Debug logging for item type 57ne you're checking)
-      if (_replay.item[id].type == 57) {
-        std::cout << "DEBUG: Item type 57 found at frame " << fnum 
-                  << " (relative: " << relativeFrame 
-                  << "), state: " << (int)_replay.item[id].frame[f].state
-                  << ", pos: (" << _replay.item[id].frame[f].xpos 
-                  << ", " << _replay.item[id].frame[f].ypos << ")"
-                  << ", spawn_id: " << id << std::endl;
-      }
     } else {
       DOUT2("    Item " << +id << " was alive longer than expected ");
     }
