@@ -238,9 +238,9 @@ function YoshisStory() {
       1021: [-14.6375150680542, -103.3063049316406],
       1022: [-14.954894065856934, -103.4649963378906],
     };
-    // instead of -123 I had to go with +481 to sync with my data (visually) and for now I'm content to not know why
+    // instead of -123 I had to go with -236 to sync with my data (visually) and for now I'm content to not know why
     // maybe due to different slippilab parser behavior
-    const frameInLap = (replayStore.frame + 481 + 1200) % 1200;
+    const frameInLap = (replayStore.frame - 236 + 1200) % 1200;
     const randallWidth = 11.9;
 
     if (frameInLap > 476 && frameInLap < 1016) {
