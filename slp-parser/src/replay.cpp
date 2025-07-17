@@ -351,8 +351,8 @@ arrow::Status SlippiReplay::itemFramesAsParquet() {
   StringBuilder match_id_b;
 
   for (unsigned i = 0; i < MAX_ITEMS; ++i) {
-    if (s.item[i].spawn_id > MAX_ITEMS) {
-      break;
+    if (s.item[i].spawn_id > MAX_ITEMS || s.item[i].num_frames == 0) {
+      continue; // Skip uninitialized items
     }
     for (unsigned f = 0; f < s.item[i].num_frames; ++f) {
       match_id_b.Append(s.start_time);
