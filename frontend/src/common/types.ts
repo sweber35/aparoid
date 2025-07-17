@@ -7,7 +7,6 @@ export interface ReplayData {
   readonly frames: Frame[];
   /** Cause of game end. To determine winner you must examine the last frame. */
   readonly ending: GameEnding;
-  frameIndexByNumber?: Record<number, number>;
 }
 export interface GameSettings {
   readonly frameCount: number;
