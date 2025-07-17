@@ -347,7 +347,7 @@ exports.handler = async (event) => {
         console.log('itemsQuery', itemsQuery);
         console.log('Max frame number for items query:', maxFrameNumber);
         const itemFrames = await runAthenaQuery(itemsQuery, isFullReplayRequest);
-        console.log(JSON.stringify('itemFrames', itemFrames));
+        console.log('itemFrames:', JSON.stringify(itemFrames));
         console.log('itemFrames count:', itemFrames.length);
         if (itemFrames.length > 0) {
             console.log('Item frame number range:', {
@@ -433,19 +433,24 @@ exports.handler = async (event) => {
         const sortedFrameNumbers = Array.from(groupedFrames.keys()).sort((a, b) => Number(a) - Number(b));
         console.log('Sorted frame numbers:', sortedFrameNumbers.slice(0, 10));
 
-        for (const frameNumber of sortedFrameNumbers) {
+        // Calculate the minimum frame number to use as offset for 0-indexing
+        const minFrameNumber = sortedFrameNumbers.length > 0 ? sortedFrameNumbers[0] : 0;
+
+        for (let i = 0; i < sortedFrameNumbers.length; i++) {
+            const frameNumber = sortedFrameNumbers[i];
+            const relativeFrameNumber = i; // 0-indexed relative to the frame range
             const frameGroup = groupedFrames.get(frameNumber);
             const players = [];
             const items = [];
             
-            // console.log('Processing frame:', { frameNumber, frameGroupLength: frameGroup.length });
+            // console.log('Processing frame:', { frameNumber, relativeFrameNumber, frameGroupLength: frameGroup.length });
 
             for (const frame of frameGroup) {
                 players.push({
-                    frameNumber: frameNumber,
+                    frameNumber: relativeFrameNumber,
                     playerIndex: Number(frame.player_index),
                     inputs: {
-                        frameNumber: frameNumber,
+                        frameNumber: relativeFrameNumber,
                         playerIndex: Number(frame.player_index),
                         isNana: frame.follower === 'true',
                         physical: {
@@ -485,7 +490,7 @@ exports.handler = async (event) => {
                         }
                     },
                     state: {
-                        frameNumber: frameNumber,
+                        frameNumber: relativeFrameNumber,
                         playerIndex: Number(frame.player_index),
                         isNana: frame.follower === 'true',
                         internalCharacterId: Number(frame.char_id),
@@ -529,7 +534,7 @@ exports.handler = async (event) => {
             for (const itemFrame of relevantItemFrames) {
                 items.push({
                     matchId: itemFrame.matchId,
-                    frameNumber: frameNumber,
+                    frameNumber: relativeFrameNumber,
                     typeId: Number(itemFrame.typeId),
                     state: Number(itemFrame.state),
                     facingDirection: Number(itemFrame.facingDirection),
@@ -549,7 +554,7 @@ exports.handler = async (event) => {
 
             // Stage state
             const stageState = {
-                frameNumber: frameNumber,
+                frameNumber: relativeFrameNumber,
                 fodLeftPlatformHeight: Number(getPlatformHeightAtFrame(
                     platformFrames.filter(frame => frame.platform == 1).map(frame => ({ ...frame, frame: frame.frame - 123 })).sort((a, b) => a.frame - b.frame),
                     frameNumber,
@@ -563,7 +568,7 @@ exports.handler = async (event) => {
             };
 
             frames.push({
-                frameNumber: frameNumber,
+                frameNumber: relativeFrameNumber,
                 randomSeed: Number(frameGroup[0].seed), // should be the same for all players in that frame
                 players,
                 items,
