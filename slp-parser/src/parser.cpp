@@ -510,7 +510,7 @@ namespace slip {
     if (f < MAX_ITEM_LIFE) {
       _replay.item[id].num_frames       += 1;
       _replay.item[id].type              = readBE2U(&_rb[_bp+O_ITEM_TYPE]);
-      _replay.item[id].frame[f].frame    = relativeFrame;
+      _replay.item[id].frame[f].frame    = fnum;
       _replay.item[id].frame[f].state    = uint8_t(_rb[_bp+O_ITEM_STATE]);
       _replay.item[id].frame[f].face_dir = readBE4F(&_rb[_bp+O_ITEM_FACING]);
       _replay.item[id].frame[f].xvel     = readBE4F(&_rb[_bp+O_ITEM_XVEL]);
@@ -527,6 +527,16 @@ namespace slip {
       }
       if(MIN_VERSION(3,6,0)) {
         _replay.item[id].frame[f].owner    = int8_t(_rb[_bp+O_ITEM_OWNER]);
+      }
+      
+      // Debug logging for item type 57ne you're checking)
+      if (_replay.item[id].type == 57) {
+        std::cout << "DEBUG: Item type 57 found at frame " << fnum 
+                  << " (relative: " << relativeFrame 
+                  << "), state: " << (int)_replay.item[id].frame[f].state
+                  << ", pos: (" << _replay.item[id].frame[f].xpos 
+                  << ", " << _replay.item[id].frame[f].ypos << ")"
+                  << ", spawn_id: " << id << std::endl;
       }
     } else {
       DOUT2("    Item " << +id << " was alive longer than expected ");

@@ -358,7 +358,7 @@ arrow::Status SlippiReplay::itemFramesAsParquet() {
       match_id_b.Append(s.start_time);
       spawn_id_b.Append(s.item[i].spawn_id);
       item_type_b.Append(s.item[i].type);
-      frame_b.Append(s.item[i].frame[f].frame + 123);
+      frame_b.Append(s.item[i].frame[f].frame);
       state_b.Append(s.item[i].frame[f].state);
       face_dir_b.Append(s.item[i].frame[f].face_dir);
       xvel_b.Append(s.item[i].frame[f].xvel);
