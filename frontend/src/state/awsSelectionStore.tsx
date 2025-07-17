@@ -102,6 +102,42 @@ function createSelectionStore(stubStore: StubStore) {
         setSelectionState("selectedFileAndStub", [data, stub]);
     }
 
+    function nextFile() {
+        const currentStub = selectionState.selectedFileAndStub?.[1];
+        if (!currentStub) return;
+        
+        const currentIndex = selectionState.filteredStubs.findIndex(
+            stub => stub.matchId === currentStub.matchId && 
+                   stub.frameStart === currentStub.frameStart && 
+                   stub.frameEnd === currentStub.frameEnd
+        );
+        
+        if (currentIndex >= 0 && currentIndex < selectionState.filteredStubs.length - 1) {
+            const nextStub = selectionState.filteredStubs[currentIndex + 1];
+            select(nextStub);
+        }
+    }
+
+    function previousFile() {
+        const currentStub = selectionState.selectedFileAndStub?.[1];
+        if (!currentStub) return;
+        
+        const currentIndex = selectionState.filteredStubs.findIndex(
+            stub => stub.matchId === currentStub.matchId && 
+                   stub.frameStart === currentStub.frameStart && 
+                   stub.frameEnd === currentStub.frameEnd
+        );
+        
+        if (currentIndex > 0) {
+            const prevStub = selectionState.filteredStubs[currentIndex - 1];
+            select(prevStub);
+        }
+    }
+
+    function setSelectionStateValue<K extends keyof SelectionState>(key: K, value: SelectionState[K]) {
+        setSelectionState(key, value);
+    }
+
     createEffect(() => {
         setSelectionState("stubs", stubStore.stubs());
         console.log("Updated selectionState.stubs:", stubStore.stubs());
@@ -148,13 +184,37 @@ function createSelectionStore(stubStore: StubStore) {
         )
     );
 
-    return { data: selectionState, setFilter, setFilters, select };
+    return { data: selectionState, setFilter, setFilters, select, nextFile, previousFile, setSelectionState: setSelectionStateValue };
 }
 
 const categoryStores: Record<string, SelectionStore> = {};
 
 // Cache for replay data to prevent unnecessary refetching
 const replayDataCache = new Map<string, ReplayData>();
+
+// Debug store for full replay requests
+const [debugStore, setDebugStore] = createStore({
+    requestFullReplay: false
+});
+
+export function toggleFullReplayDebug(): void {
+    setDebugStore("requestFullReplay", (current) => {
+        const newValue = !current;
+        console.log(`Full replay debug mode ${newValue ? 'ENABLED' : 'DISABLED'}`);
+        return newValue;
+    });
+}
+
+export function getFullReplayDebugState(): boolean {
+    return debugStore.requestFullReplay;
+}
+
+// Clear cache when debug mode changes
+createEffect(() => {
+    debugStore.requestFullReplay;
+    console.log('Debug mode changed, clearing replay data cache');
+    replayDataCache.clear();
+});
 
 export async function initCategoryStore(category: Category) {
     console.log('Loading stubs for category:', category);
@@ -177,10 +237,22 @@ export async function initCategoryStore(category: Category) {
             }
 
             console.log('Fetching replay data for:', cacheKey);
+            
+            // Prepare request body - conditionally omit frameStart and frameEnd for debug mode
+            const requestBody = debugStore.requestFullReplay 
+                ? { matchId: stub.matchId }
+                : stub;
+            
+            if (debugStore.requestFullReplay) {
+                console.log('Debug mode: Requesting full replay (omitting frameStart/frameEnd)');
+            }
+            
+            console.log('Sending request to replay-data lambda:', requestBody);
+            
             const result = await fetch(API_CONFIG.replayData, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(stub),
+                body: JSON.stringify(requestBody),
             });
 
             if (!result.ok) {
