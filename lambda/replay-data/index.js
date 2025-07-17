@@ -253,7 +253,7 @@ exports.handler = async (event) => {
                 owner
             FROM items
             WHERE match_id = '${matchId}'
-              AND frame BETWEEN ${frameStart} AND ${frameEnd}
+              AND frame BETWEEN ${frameStart + 123} AND ${frameEnd + 123}
         `;
         console.log('itemsQuery', itemsQuery);
         const itemFrames = await runAthenaQuery(itemsQuery);
