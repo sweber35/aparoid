@@ -147,24 +147,7 @@ async function runAthenaQuery(query, usePagination = false) {
     }
 }
 
-/**
- * @param {Array<{ frame: number, height: number }>} changes - Sorted list of platform height changes.
- * @param {number} currentFrame - The frame to evaluate platform height at.
- * @param {number} defaultHeight - Starting height of platform if no change events have occurred yet.
- * @returns {number|null} - The current platform height or null if no change has occurred yet.
- */
-function getPlatformHeightAtFrame(changes, currentFrame, defaultHeight) {
-    let height = null;
 
-    for (const change of changes) {
-        if (Number(change.frame) > Number(currentFrame)) {
-            break;
-        }
-        height = Number(change.platform_height);
-    }
-
-    return height !== null ? height : defaultHeight;
-}
 
 exports.handler = async (event) => {
 
@@ -358,53 +341,14 @@ exports.handler = async (event) => {
         }
 
         const platformsQuery = `
-            SELECT *
-            FROM (
-                     -- Platform changes within the range
-                     SELECT *
-                     FROM platforms
-                     WHERE match_id = '${matchId}'
-                     ${!isFullReplayRequest ? `AND frame BETWEEN ${relativeFrameStart} AND ${relativeFrameEnd}` : ''}
-
-                     ${!isFullReplayRequest ? `
-                     UNION ALL
-
-                     -- Most recent right platform change before the range
-                     SELECT *
-                     FROM (
-                              SELECT
-                                match_id as matchId,
-                                frame as frameNumber,
-                                platform,
-                                platform_height as platformHeight
-                              FROM platforms
-                              WHERE match_id = '${matchId}'
-                                AND platform = 0
-                                AND frame < ${relativeFrameStart}
-                              ORDER BY frame DESC
-                                  LIMIT 1
-                          )
-
-                     UNION ALL
-
-                     -- Most recent left platform change before the range
-                     SELECT *
-                     FROM (
-                              SELECT
-                                match_id as matchId,
-                                frame as frameNumber,
-                                platform,
-                                platform_height as platformHeight
-                              FROM platforms
-                              WHERE match_id = '${matchId}'
-                                AND platform = 1
-                                AND frame < ${relativeFrameStart}
-                              ORDER BY frame DESC
-                                  LIMIT 1
-                          )
-                     ` : ''}
-                 ) t
-            ORDER BY frame;
+            SELECT
+                frame as frameNumber,
+                left_height as leftHeight,
+                right_height as rightHeight
+            FROM platform_frames
+            WHERE match_id = '${matchId}'
+            ${!isFullReplayRequest ? `AND frame BETWEEN ${relativeFrameStart} AND ${relativeFrameEnd}` : ''}
+            ORDER BY frame ASC
         `;
         console.log('platformsQuery', platformsQuery);
         const platformFrames = await runAthenaQuery(platformsQuery, isFullReplayRequest);
@@ -552,19 +496,12 @@ exports.handler = async (event) => {
                 });
             }
 
-            // Stage state
+            // Stage state - simple lookup since we have platform data for every frame
+            const platformFrame = platformFrames.find(pf => Number(pf.frameNumber) === frameNumber);
             const stageState = {
                 frameNumber: relativeFrameNumber,
-                fodLeftPlatformHeight: Number(getPlatformHeightAtFrame(
-                    platformFrames.filter(frame => frame.platform == 1).map(frame => ({ ...frame, frame: frame.frame - 123 })).sort((a, b) => a.frame - b.frame),
-                    frameNumber,
-                    20.0
-                )),
-                fodRightPlatformHeight: Number(getPlatformHeightAtFrame(
-                    platformFrames.filter(frame => frame.platform == 0).map(frame => ({ ...frame, frame: frame.frame - 123 })).sort((a, b) => a.frame - b.frame),
-                    frameNumber,
-                    27.44186047
-                ))
+                fodLeftPlatformHeight: platformFrame ? Number(platformFrame.leftHeight) : 20.0,
+                fodRightPlatformHeight: platformFrame ? Number(platformFrame.rightHeight) : 27.44186047
             };
 
             frames.push({
