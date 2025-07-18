@@ -9,39 +9,64 @@ import { replayStore } from "~/state/awsStore";
 // from hitboxspace to worldspace.
 export function Item(props: { item: ItemUpdate }) {
   const itemName = createMemo(() => itemNamesById[props.item.typeId]);
+  
+  // Debug logging for items that don't match any case
+  const debugInfo = createMemo(() => {
+    const name = itemName();
+    const isSupported = name && [
+      "Needle(thrown)",
+      "Fox's Laser",
+      "Falco's Laser", 
+      "Turnip",
+      "Yoshi's egg(thrown)",
+      "Luigi's fire",
+      "Mario's fire",
+      "Missile",
+      "Samus's bomb",
+      "Samus's chargeshot",
+      "Shyguy (Heiho)"
+    ].includes(name);
+    
+    if (!isSupported) {
+      console.warn(`Unsupported item type: ${props.item.typeId} -> "${name}"`, props.item);
+    }
+    
+    return { name, isSupported };
+  });
+  
   return (
     <Switch>
-      <Match when={itemName() === "Needle(thrown)"}>
+      <Match when={debugInfo().name === "Needle(thrown)"}>
         <Needle item={props.item} />
       </Match>
-      <Match when={itemName() === "Fox's Laser"}>
+      <Match when={debugInfo().name === "Fox's Laser"}>
         <FoxLaser item={props.item} />
       </Match>
-      <Match when={itemName() === "Falco's Laser"}>
+      <Match when={debugInfo().name === "Falco's Laser"}>
         <FalcoLaser item={props.item} />
       </Match>
-      <Match when={itemName() === "Turnip"}>
+      <Match when={debugInfo().name === "Turnip"}>
         <Turnip item={props.item} />
       </Match>
-      <Match when={itemName() === "Yoshi's egg(thrown)"}>
+      <Match when={debugInfo().name === "Yoshi's egg(thrown)"}>
         <YoshiEgg item={props.item} />
       </Match>
-      <Match when={itemName() === "Luigi's fire"}>
+      <Match when={debugInfo().name === "Luigi's fire"}>
         <LuigiFireball item={props.item} />
       </Match>
-      <Match when={itemName() === "Mario's fire"}>
+      <Match when={debugInfo().name === "Mario's fire"}>
         <MarioFireball item={props.item} />
       </Match>
-      <Match when={itemName() === "Missile"}>
+      <Match when={debugInfo().name === "Missile"}>
         <Missile item={props.item} />
       </Match>
-      <Match when={itemName() === "Samus's bomb"}>
+      <Match when={debugInfo().name === "Samus's bomb"}>
         <SamusBomb item={props.item} />
       </Match>
-      <Match when={itemName() === "Samus's chargeshot"}>
+      <Match when={debugInfo().name === "Samus's chargeshot"}>
         <SamusChargeshot item={props.item} />
       </Match>
-      <Match when={itemName() === "Shyguy (Heiho)"}>
+      <Match when={debugInfo().name === "Shyguy (Heiho)"}>
         <FlyGuy item={props.item} />
       </Match>
     </Switch>
@@ -280,6 +305,6 @@ function FlyGuy(props: { item: ItemUpdate }) {
   );
 }
 
-function getOwner(replayStore: ReplayStore, item: ItemUpdate): PlayerUpdate {
+function getOwner(replayStore: any, item: ItemUpdate): PlayerUpdate {
   return replayStore.replayData!.frames[item.frameNumber].players[item.owner];
 }

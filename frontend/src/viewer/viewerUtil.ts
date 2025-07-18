@@ -30,13 +30,13 @@ export function getStartOfAction(
     return playerState.frameNumber; // Or throw / handle error
   }
 
-  while (earliestStateOfAction.frameNumber > replayData.frames[0].frameNumber) {
+  while (earliestStateOfAction.frameNumber > 0) {
     const previousFrameNumber = earliestStateOfAction.frameNumber - 1;
 
     // Check if the previous frame exists in the replay data
-    if (!replayData.frameIndexByNumber || !(previousFrameNumber in replayData.frameIndexByNumber)) {
+    if (previousFrameNumber < 0 || previousFrameNumber >= replayData.frames.length) {
       console.warn(
-          `Aborting backtrack: Frame ${previousFrameNumber} not found in replay (first available: ${replayData.frames[0].frameNumber})`
+          `Aborting backtrack: Frame ${previousFrameNumber} not found in replay (available frames: 0-${replayData.frames.length - 1})`
       );
       return earliestStateOfAction.frameNumber;
     }
@@ -75,14 +75,10 @@ export function getPlayerOnFrame(
     frameNumber: number,
     replayData: ReplayData
 ): PlayerUpdate | undefined {
-  const index = replayData.frameIndexByNumber?.[frameNumber];
-  if (index === undefined) {
-    console.warn(`Frame ${frameNumber}/${replayData.settings.frameCount} not found in index`);
-    return undefined;
-  }
-  const frame = replayData.frames[index];
+  // Since frames are now 0-indexed, we can use the frameNumber directly as the array index
+  const frame = replayData.frames[frameNumber];
   if (!frame) {
-    console.warn(`No frame at index ${index}`);
+    console.warn(`Frame ${frameNumber} not found in replay data (available frames: 0-${replayData.frames.length - 1})`);
     return undefined;
   }
   return frame.players[playerIndex];

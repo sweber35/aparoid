@@ -45,10 +45,6 @@ const stageFilterProps = createOptions(
 );
 
 export function Replays(props: { selectionStore: SelectionStore }) {
-    console.log('Replays component render - selectionStore:', props.selectionStore);
-    console.log('Current stubs count:', props.selectionStore?.data.stubs.length);
-    console.log('Current filtered stubs count:', props.selectionStore?.data.filteredStubs.length);
-    console.log('Current category signal value:', currentCategory());
     
     // Create a computed value for the current selected category option
     const currentCategoryOption = createMemo(() => {
@@ -77,8 +73,6 @@ export function Replays(props: { selectionStore: SelectionStore }) {
             } finally {
                 setLoadingCategory(false);
             }
-        } else {
-            console.log('DEBUG: No valid selection');
         }
     }
 
@@ -212,7 +206,6 @@ function GameInfo(props: { replayStub: ReplayStub, loading?: boolean }) {
   // Handler for toggling bugged state
   async function toggleBugged() {
     const newBugged = !bugged();
-    console.log('toggleBugged called, current bugged:', bugged(), 'new bugged:', newBugged);
     setLoading(true);
     setBugged(newBugged); // Optimistic update
     
@@ -222,7 +215,6 @@ function GameInfo(props: { replayStub: ReplayStub, loading?: boolean }) {
       frameEnd: props.replayStub.frameEnd,
       bugged: newBugged,
     };
-    console.log('Sending request to Lambda:', requestBody);
     
     try {
       const response = await fetch(API_CONFIG.replayTag, {
@@ -231,14 +223,11 @@ function GameInfo(props: { replayStub: ReplayStub, loading?: boolean }) {
         body: JSON.stringify(requestBody),
       });
       
-      console.log('Lambda response status:', response.status);
-      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const result = await response.json();
-      console.log('Lambda response body:', result);
       // Use the returned bugged value from the Lambda response
       setBugged(result.bugged);
       // Update the stub's bugged value

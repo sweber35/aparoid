@@ -1,13 +1,11 @@
 import { onCleanup, onMount, Show } from "solid-js";
 import { MinusIcon, PlusIcon } from "~/components/common/icons";
 import {
-  replayStore,
   adjust,
   jump,
   jumpPercent,
-  // nextHighlight,
   pause,
-  // previousHighlight,
+  replayStore,
   speedFast,
   speedNormal,
   speedSlow,
@@ -18,7 +16,7 @@ import {
   zoomOut,
 } from "~/state/awsStore";
 
-import { currentSelectionStore } from "~/state/awsSelectionStore";
+import { currentSelectionStore, toggleFullReplayDebug, getFullReplayDebugState } from "~/state/awsSelectionStore";
 
 export function Controls() {
   onMount(() => {
@@ -92,11 +90,11 @@ export function Controls() {
         break;
       case "]":
       case "}":
-        void currentSelectionStore().nextFile();
+        currentSelectionStore()?.nextFile();
         break;
       case "[":
       case "{":
-        void currentSelectionStore().previousFile();
+        currentSelectionStore()?.previousFile();
         break;
       // case "'":
       // case '"':
@@ -109,6 +107,7 @@ export function Controls() {
       case "d":
       case "D":
         toggleDebug();
+        toggleFullReplayDebug();
         break;
       case "f":
       case "F":
@@ -171,6 +170,11 @@ export function Controls() {
         </MinusIcon>
         <label for="seekbar" class="font-mono text-sm">
           {replayStore.isDebug ? replayStore.frame - 123 : replayStore.frame}
+          {getFullReplayDebugState() && (
+            <span class="ml-2 text-xs text-orange-600 bg-orange-100 px-1 rounded" title="Full replay debug mode active">
+              FULL
+            </span>
+          )}
         </label>
         <PlusIcon
           class="h-6 w-6"

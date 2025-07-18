@@ -351,8 +351,8 @@ arrow::Status SlippiReplay::itemFramesAsParquet() {
   StringBuilder match_id_b;
 
   for (unsigned i = 0; i < MAX_ITEMS; ++i) {
-    if (s.item[i].spawn_id > MAX_ITEMS) {
-      break;
+    if (s.item[i].spawn_id > MAX_ITEMS || s.item[i].num_frames == 0) {
+      continue; // Skip uninitialized items
     }
     for (unsigned f = 0; f < s.item[i].num_frames; ++f) {
       match_id_b.Append(s.start_time);
@@ -448,80 +448,80 @@ arrow::Status SlippiReplay::itemFramesAsParquet() {
   return arrow::Status::OK();
 }
 
-arrow::Status SlippiReplay::fodPlatformChangesAsParquet() {
+
+
+arrow::Status SlippiReplay::fodPlatformFramesAsParquet() {
   SlippiReplay s = (*this);
 
   uint8_t _slippi_maj = (s.slippi_version_raw >> 24) & 0xff;
   uint8_t _slippi_min = (s.slippi_version_raw >> 16) & 0xff;
   uint8_t _slippi_rev = (s.slippi_version_raw >>  8) & 0xff;
 
-  if (!s.platform_events.empty()) {
+  if (!s.platform_frames.empty()) {
 
     using arrow::FloatBuilder;
-    using arrow::UInt8Builder;
-    using arrow::UInt16Builder;
     using arrow::UInt32Builder;
     using arrow::StringBuilder;
 
     std::shared_ptr<arrow::Schema> schema = arrow::schema({
       arrow::field("match_id", arrow::utf8()),
       arrow::field("frame", arrow::uint32()),
-      arrow::field("platform", arrow::uint8()),
-      arrow::field("platform_height", arrow::float32())
+      arrow::field("left_height", arrow::float32()),
+      arrow::field("right_height", arrow::float32())
     });
 
-    FloatBuilder platform_height_b;
-    UInt8Builder platform_b;
+    FloatBuilder left_height_b;
+    FloatBuilder right_height_b;
     UInt32Builder frame_b;
     StringBuilder match_id_b;
 
-    for (size_t i = 0; i < s.platform_events.size(); ++i) {
-      const auto& e = s.platform_events[i];
+    for (size_t i = 0; i < s.platform_frames.size(); ++i) {
+      const auto& e = s.platform_frames[i];
       match_id_b.Append(s.start_time);
       frame_b.Append(e.frame);
-      platform_b.Append(e.platform);
-      platform_height_b.Append(e.platform_height);
+      left_height_b.Append(e.left_height);
+      right_height_b.Append(e.right_height);
     }
 
-      std::shared_ptr<arrow::Array> match_id_a, frame_a, platform_a, platform_height_a;
+    std::shared_ptr<arrow::Array> match_id_a, frame_a, left_height_a, right_height_a;
 
-      match_id_b.Finish(&match_id_a);
-      frame_b.Finish(&frame_a);
-      platform_b.Finish(&platform_a);
-      platform_height_b.Finish(&platform_height_a);
+    match_id_b.Finish(&match_id_a);
+    frame_b.Finish(&frame_a);
+    left_height_b.Finish(&left_height_a);
+    right_height_b.Finish(&right_height_a);
 
-      std::shared_ptr<arrow::Table> table = arrow::Table::Make(schema, {
-        match_id_a, frame_a, platform_a, platform_height_a
-      });
+    std::shared_ptr<arrow::Table> table = arrow::Table::Make(schema, {
+      match_id_a, frame_a, left_height_a, right_height_a
+    });
 
-      try {
-        std::shared_ptr<arrow::io::FileOutputStream> outfile;
-        PARQUET_ASSIGN_OR_THROW(outfile, arrow::io::FileOutputStream::Open("/tmp/platforms.parquet"));
+    try {
+      std::shared_ptr<arrow::io::FileOutputStream> outfile;
+      PARQUET_ASSIGN_OR_THROW(outfile, arrow::io::FileOutputStream::Open("/tmp/platforms.parquet"));
 
-        std::shared_ptr<arrow::io::OutputStream> outstream =
-          std::static_pointer_cast<arrow::io::OutputStream>(outfile);
+      std::shared_ptr<arrow::io::OutputStream> outstream =
+        std::static_pointer_cast<arrow::io::OutputStream>(outfile);
 
-        // TODO: switch from to snappy
-        std::shared_ptr<parquet::WriterProperties> writer_properties =
-          parquet::WriterProperties::Builder()
-            .compression(parquet::Compression::UNCOMPRESSED)
-            ->build();
+      // TODO: switch from to snappy
+      std::shared_ptr<parquet::WriterProperties> writer_properties =
+        parquet::WriterProperties::Builder()
+          .compression(parquet::Compression::UNCOMPRESSED)
+          ->build();
 
-        PARQUET_THROW_NOT_OK(
-          parquet::arrow::WriteTable(*table, arrow::default_memory_pool(), outstream, 1024, writer_properties)
-        );
-      } catch (const parquet::ParquetException& e) {
-        std::cerr << "[ParquetException] " << e.what() << std::endl;
-        return arrow::Status::ExecutionError("ParquetException: ", e.what());
-      } catch (const std::exception& e) {
-        std::cerr << "[std::exception] " << e.what() << std::endl;
-        return arrow::Status::ExecutionError("std::exception: ", e.what());
-      } catch (...) {
-        std::cerr << "[Unknown error] during Parquet file write." << std::endl;
-        return arrow::Status::ExecutionError("Unknown error during Parquet write");
-      }
+      PARQUET_THROW_NOT_OK(
+        parquet::arrow::WriteTable(*table, arrow::default_memory_pool(), outstream, 1024, writer_properties)
+      );
+    } catch (const parquet::ParquetException& e) {
+      std::cerr << "[ParquetException] " << e.what() << std::endl;
+      return arrow::Status::ExecutionError("ParquetException: ", e.what());
+    } catch (const std::exception& e) {
+      std::cerr << "[std::exception] " << e.what() << std::endl;
+      return arrow::Status::ExecutionError("std::exception: ", e.what());
+    } catch (...) {
+      std::cerr << "[Unknown error] during Parquet file write." << std::endl;
+      return arrow::Status::ExecutionError("Unknown error during Parquet write");
+    }
 
-      return arrow::Status::OK();
+    return arrow::Status::OK();
   }
   return arrow::Status::OK();
 }

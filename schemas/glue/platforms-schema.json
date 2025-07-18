@@ -1,6 +1,6 @@
 {
   "name": "platforms",
-  "description": "Frame-by-frame FoD platform height change event data from SLP replay files",
+  "description": "Frame-by-frame FoD platform height data from SLP replay files",
   "columns": [
     {
       "name": "match_id",
@@ -13,14 +13,14 @@
       "comment": "Frame number in the match"
     },
     {
-      "name": "platform",
-      "type": "tinyint",
-      "comment": "Left or right platform"
+      "name": "left_height",
+      "type": "float",
+      "comment": "Left platform height for this frame"
     },
     {
-      "name": "platform_height",
+      "name": "right_height",
       "type": "float",
-      "comment": "Platform height"
+      "comment": "Right platform height for this frame"
     }
   ],
   "partitionKeys": []

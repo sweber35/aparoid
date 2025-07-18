@@ -3,8 +3,8 @@ name: Build Slippc Binary and Deploy Lambda Layer
 on:
   push:
     branches:
-      - feature/build-slp-parser
-      - feature/remove-compression
+      - main
+      - feature/data-consistency
     paths:
       - 'slp-parser/**'
       - 'lambda-layers/slippc-layer/**'

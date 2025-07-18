@@ -98,13 +98,49 @@ function createSelectionStore(stubStore: StubStore) {
     }
 
     async function select(stub: ReplayStub) {
+        console.log('Replay selection changed to match ID:', stub.matchId);
         const data = await stubStore.getReplayData(stub);
         setSelectionState("selectedFileAndStub", [data, stub]);
     }
 
+    function nextFile() {
+        const currentStub = selectionState.selectedFileAndStub?.[1];
+        if (!currentStub) return;
+        
+        const currentIndex = selectionState.filteredStubs.findIndex(
+            stub => stub.matchId === currentStub.matchId && 
+                   stub.frameStart === currentStub.frameStart && 
+                   stub.frameEnd === currentStub.frameEnd
+        );
+        
+        if (currentIndex >= 0 && currentIndex < selectionState.filteredStubs.length - 1) {
+            const nextStub = selectionState.filteredStubs[currentIndex + 1];
+            select(nextStub);
+        }
+    }
+
+    function previousFile() {
+        const currentStub = selectionState.selectedFileAndStub?.[1];
+        if (!currentStub) return;
+        
+        const currentIndex = selectionState.filteredStubs.findIndex(
+            stub => stub.matchId === currentStub.matchId && 
+                   stub.frameStart === currentStub.frameStart && 
+                   stub.frameEnd === currentStub.frameEnd
+        );
+        
+        if (currentIndex > 0) {
+            const prevStub = selectionState.filteredStubs[currentIndex - 1];
+            select(prevStub);
+        }
+    }
+
+    function setSelectionStateValue<K extends keyof SelectionState>(key: K, value: SelectionState[K]) {
+        setSelectionState(key, value);
+    }
+
     createEffect(() => {
         setSelectionState("stubs", stubStore.stubs());
-        console.log("Updated selectionState.stubs:", stubStore.stubs());
     });
 
     createEffect(() => {
@@ -148,7 +184,7 @@ function createSelectionStore(stubStore: StubStore) {
         )
     );
 
-    return { data: selectionState, setFilter, setFilters, select };
+    return { data: selectionState, setFilter, setFilters, select, nextFile, previousFile, setSelectionState: setSelectionStateValue };
 }
 
 const categoryStores: Record<string, SelectionStore> = {};
@@ -156,13 +192,29 @@ const categoryStores: Record<string, SelectionStore> = {};
 // Cache for replay data to prevent unnecessary refetching
 const replayDataCache = new Map<string, ReplayData>();
 
+// Debug store for full replay requests
+const [debugStore, setDebugStore] = createStore({
+    requestFullReplay: false
+});
+
+export function toggleFullReplayDebug(): void {
+    setDebugStore("requestFullReplay", (current) => !current);
+}
+
+export function getFullReplayDebugState(): boolean {
+    return debugStore.requestFullReplay;
+}
+
+// Clear cache when debug mode changes
+createEffect(() => {
+    debugStore.requestFullReplay;
+    replayDataCache.clear();
+});
+
 export async function initCategoryStore(category: Category) {
-    console.log('Loading stubs for category:', category);
     const stubs = await loadStubsForCategory(category);
-    console.log('Loaded stubs:', stubs.length, 'for category:', category);
 
     const [stubSignal, setStubSignal] = createSignal<ReplayStub[]>(stubs);
-    console.log("Loaded stubs:", stubs);
 
     categoryStores[category] = createSelectionStore({
         stubs: stubSignal,
@@ -172,15 +224,16 @@ export async function initCategoryStore(category: Category) {
             
             // Check if we already have this replay data cached
             if (replayDataCache.has(cacheKey)) {
-                console.log('Using cached replay data for:', cacheKey);
                 return replayDataCache.get(cacheKey)!;
             }
-
-            console.log('Fetching replay data for:', cacheKey);
+            
+            // Always send the full stub with frameStart and frameEnd
+            const requestBody = stub;
+            
             const result = await fetch(API_CONFIG.replayData, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(stub),
+                body: JSON.stringify(requestBody),
             });
 
             if (!result.ok) {
@@ -190,10 +243,7 @@ export async function initCategoryStore(category: Category) {
             const data = await result.json();
 
             const replayData: ReplayData = {
-                ...data,
-                frameIndexByNumber: Object.fromEntries(
-                    data.frames.map((frame: Frame, index: number) => [frame.frameNumber, index])
-                )
+                ...data
             };
 
             for (let i = 1; i < replayData.frames.length; i++) {
@@ -203,15 +253,12 @@ export async function initCategoryStore(category: Category) {
                     console.warn(`Frame gap between ${prev} and ${curr}`);
                 }
             }
-            console.log('Loaded replay data:', replayData);
-
             // Cache the replay data
             replayDataCache.set(cacheKey, replayData);
 
             return replayData;
         },
     });
-    console.log('Category store created for:', category);
 }
 
 export const [currentCategory, setCurrentCategory] = createSignal<Category>("Ledge Dashes");
@@ -219,29 +266,23 @@ export const [currentSelectionStore, setCurrentSelectionStore] = createSignal<Se
 
 // Initialize the first category store immediately
 (async () => {
-    console.log('Initializing first category store');
     await initCategoryStore("Ledge Dashes");
     setCurrentSelectionStore(categoryStores["Ledge Dashes"]);
 })();
 
 createEffect(async () => {
     const category = currentCategory();
-    console.log('Category changed to:', category);
 
     // Clear cache when switching categories to ensure fresh data
     replayDataCache.clear();
-    console.log('Cleared replay data cache for new category');
 
     if (!categoryStores[category]) {
-        console.log('Initializing category store for:', category);
         await initCategoryStore(category);
     }
-    console.log('setCurrentSelectionStore():', category, categoryStores[category]);
     setCurrentSelectionStore(categoryStores[category]);
     
     // Clear filters when changing categories
     if (categoryStores[category]) {
-        console.log('Clearing filters for category:', category);
         categoryStores[category].setFilters([]);
     }
 });

@@ -214,7 +214,7 @@ function Settings() {
                   D
                 </kbd>
               </td>
-              <td class="pl-3">Toggle debug output (un-normalizes frame#)</td>
+              <td class="pl-3">Toggle debug output (un-normalizes frame# and requests full replays)</td>
             </tr>
           </tbody>
         </table>

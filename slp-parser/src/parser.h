@@ -43,6 +43,8 @@ private:
   bool            _parseGameEnd();
   bool            _parseItemUpdate();
   bool            _parseFodPlatform();
+  void            _updatePlatformFrames(int32_t frame, uint8_t platform, float height);
+  void            _initializePlatformFrames();
   bool            _parseMetadata();
   void            _cleanup(); //Cleanup replay data
 public:
@@ -52,7 +54,7 @@ public:
   Analysis* analyze();                   //Analyze the loaded replay file
   void playerFramesAsParquet();
   void itemFramesAsParquet();
-  void fodPlatformChangesAsParquet();
+  void fodPlatformFramesAsParquet();
   std::string settingsAsJson();
   std::string playerSettingsAsJson();
   std::string matchSettingsAsJson(const std::string& filename);
