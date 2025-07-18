@@ -496,7 +496,7 @@ arrow::Status SlippiReplay::fodPlatformFramesAsParquet() {
 
     try {
       std::shared_ptr<arrow::io::FileOutputStream> outfile;
-      PARQUET_ASSIGN_OR_THROW(outfile, arrow::io::FileOutputStream::Open("/tmp/platform-frames.parquet"));
+      PARQUET_ASSIGN_OR_THROW(outfile, arrow::io::FileOutputStream::Open("/tmp/platforms.parquet"));
 
       std::shared_ptr<arrow::io::OutputStream> outstream =
         std::static_pointer_cast<arrow::io::OutputStream>(outfile);
