@@ -317,13 +317,10 @@ exports.handler = async (event) => {
                 xpos as xPosition,
                 ypos as yPosition,
                 spawn_id as spawnId,
-                missile_type as samusMissileType,
-                turnip_face as peachTurnipFace,
-                is_launched as isChargeShotLaunched,
-                charged_power as chargeShotLevel,
                 owner
             FROM items
             WHERE match_id = '${matchId}'
+            AND item_type IN (79, 54, 55, 99, 86, 105, 48, 95, 93, 94, 210)
             ${!isFullReplayRequest ? `AND frame BETWEEN ${relativeFrameStart} AND ${relativeFrameEnd}` : `AND frame <= ${maxFrameNumber}`}
             ORDER BY frame ASC
         `;
@@ -489,8 +486,7 @@ exports.handler = async (event) => {
                     spawnId: Number(itemFrame.spawnId),
                     samusMissileType: Number(itemFrame.samusMissileType),
                     peachTurnipFace: Number(itemFrame.peachTurnipFace),
-                    isChargedShotLaunched: Number(itemFrame.isChargedShotLaunched),
-                    chargeShotLevel: Number(itemFrame.chargeShotLevel),
+                    chargeShotChargeLevel: Number(itemFrame.chargeShotLevel),
                     owner: Number(itemFrame.owner),
                     ...itemStateDefaults,
                 });

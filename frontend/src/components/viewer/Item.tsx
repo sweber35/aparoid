@@ -69,25 +69,6 @@ export function Item(props: { item: ItemUpdate }) {
       <Match when={debugInfo().name === "Shyguy (Heiho)"}>
         <FlyGuy item={props.item} />
       </Match>
-      <Match when={!debugInfo().isSupported}>
-        {/* Render a generic debug item for unsupported types */}
-        <circle
-          cx={props.item.xPosition}
-          cy={props.item.yPosition}
-          r={10}
-          fill="red"
-          opacity={0.5}
-        />
-        <text
-          x={props.item.xPosition}
-          y={props.item.yPosition - 15}
-          text-anchor="middle"
-          font-size="8"
-          fill="red"
-        >
-          {props.item.typeId}
-        </text>
-      </Match>
     </Switch>
   );
 }
