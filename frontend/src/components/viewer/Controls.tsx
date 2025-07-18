@@ -169,7 +169,7 @@ export function Controls() {
           -
         </MinusIcon>
         <label for="seekbar" class="font-mono text-sm">
-          {replayStore.isDebug ? replayStore.frame - 123 : replayStore.frame}
+          {replayStore.frame}
           {getFullReplayDebugState() && (
             <span class="ml-2 text-xs text-orange-600 bg-orange-100 px-1 rounded" title="Full replay debug mode active">
               FULL
