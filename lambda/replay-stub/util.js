@@ -107,8 +107,8 @@ function generateSequenceQuery(actionDefs, bufferFrames) {
       vc.sequence_start as originalSequenceStart,
       vc.sequence_end as originalSequenceEnd,
       CASE
-        WHEN vc.sequence_start - ${bufferFrames} < 0 THEN 0
-        ELSE vc.sequence_start - ${bufferFrames}
+        WHEN vc.sequence_start - ${bufferFrames * 2} < 0 THEN 0
+        ELSE vc.sequence_start - ${bufferFrames * 2}
       END AS frameStart,
       CASE
         WHEN vc.sequence_end + ${bufferFrames} > ms.frame_count THEN ms.frame_count
