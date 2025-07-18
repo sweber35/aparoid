@@ -494,9 +494,6 @@ exports.handler = async (event) => {
                     ...itemStateDefaults,
                 });
             }
-
-            // Only include stage data if platform data exists
-            const platformFrame = platformFrames.find(pf => Number(pf.frameNumber) === frameNumber);
             
             const frameData = {
                 frameNumber: relativeFrameNumber,
@@ -506,13 +503,15 @@ exports.handler = async (event) => {
             };
 
             if (platformFrames.length > 0) {
-                const platformFrame = platformFrames[relativeFrameNumber] || { leftHeight: 20.0, rightHeight: 27.44186047 };
-
-                frameData.stage = {
-                    frameNumber: relativeFrameNumber,
-                    fodLeftPlatformHeight: Number(platformFrame.leftHeight),
-                    fodRightPlatformHeight: Number(platformFrame.rightHeight)
-                };
+                // Platform data is 0-based array indexed, so access by relativeFrameNumber
+                const platformFrame = platformFrames[relativeFrameNumber];
+                if (platformFrame) {
+                    frameData.stage = {
+                        frameNumber: relativeFrameNumber,
+                        fodLeftPlatformHeight: Number(platformFrame.leftHeight),
+                        fodRightPlatformHeight: Number(platformFrame.rightHeight)
+                    };
+                }
             }
 
             frames.push(frameData);

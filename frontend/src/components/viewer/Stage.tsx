@@ -366,11 +366,11 @@ function FountainOfDreams() {
   );
   const platforms = createMemo(() => {
     const gameHeightL =
-      replayStore.replayData?.frames[replayStore.frame + 123]?.stage
-        .fodLeftPlatformHeight ?? fodInitialLeftPlatformHeight;
+      replayStore.replayData?.frames[replayStore.frame]?.stage
+        ?.fodLeftPlatformHeight ?? fodInitialLeftPlatformHeight;
     const gameHeightR =
-      replayStore.replayData?.frames[replayStore.frame + 123]?.stage
-        .fodRightPlatformHeight ?? fodInitialRightPlatformHeight;
+      replayStore.replayData?.frames[replayStore.frame]?.stage
+        ?.fodRightPlatformHeight ?? fodInitialRightPlatformHeight;
     const heightL = gameHeightL * platformHeightCoefficient;
     const heightR = gameHeightR * platformHeightCoefficient;
     return [
@@ -393,7 +393,7 @@ function FountainOfDreams() {
           <polyline
             points={points.join(" ")}
             stroke-dasharray={heightsKnown() ? undefined : "2,4"}
-            class="stroke-red-800"
+            class="stroke-slate-800"
           />
         )}
       </For>
