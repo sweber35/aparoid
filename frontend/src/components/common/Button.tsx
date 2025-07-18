@@ -6,7 +6,7 @@ export function PrimaryButton(props: JSX.HTMLAttributes<HTMLButtonElement>) {
     <button
       type="button"
       {...otherProps}
-      class={`inline-flex w-fit items-center rounded-md border border-transparent bg-slippi-400 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slippi-500 focus:outline-none focus:ring-2 focus:ring-slippi-500 focus:ring-offset-2 ${
+      class={`inline-flex w-fit items-center rounded-md border border-transparent bg-accent-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-ultraviolet-600 focus:outline-none focus:ring-2 focus:ring-accent-primary focus:ring-offset-2 transition-colors duration-200 ${
         classProp.class ?? ""
       }`}
     >
@@ -21,7 +21,7 @@ export function SecondaryButton(props: JSX.HTMLAttributes<HTMLButtonElement>) {
     <button
       type="button"
       {...otherProps}
-      class={`inline-flex w-fit items-center rounded-md border border-transparent bg-slippi-100 px-4 py-2 text-sm font-medium text-slippi-700 hover:bg-slippi-200 focus:outline-none focus:ring-2 focus:ring-slippi-500 focus:ring-offset-2 ${
+      class={`inline-flex w-fit items-center rounded-md border border-transparent bg-ecto-green-500 px-4 py-2 text-sm font-medium text-void-900 hover:bg-ecto-green-600 focus:outline-none focus:ring-2 focus:ring-ecto-green-500 focus:ring-offset-2 transition-colors duration-200 ${
         classProp.class ?? ""
       }`}
     >
@@ -36,7 +36,7 @@ export function WhiteButton(props: JSX.HTMLAttributes<HTMLButtonElement>) {
     <button
       type="button"
       {...otherProps}
-      class={`inline-flex w-fit items-center rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-slippi-500 focus:ring-offset-2 ${
+      class={`inline-flex w-fit items-center rounded-md border border-theme-primary bg-theme-tertiary px-4 py-2 text-sm font-medium text-theme-primary shadow-sm hover:bg-charred-graphite-400 focus:outline-none focus:ring-2 focus:ring-accent-primary focus:ring-offset-2 transition-colors duration-200 ${
         classProp.class ?? ""
       }`}
     >

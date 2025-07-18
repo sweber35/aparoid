@@ -6,8 +6,15 @@ import {
 import { stageNameByExternalId } from "~/common/ids";
 import { isInVersion } from "~/parser/parser";
 import { replayStore } from "~/state/awsStore";
+import { themeStore } from "~/state/themeStore";
 
 export function Stage() {
+  // Theme-aware colors for stage elements
+  const stageColors = () => ({
+    fill: themeStore.isDark() ? "#B7C0EE" : "rgb(30 41 59)", // ultraviolet-100 in dark mode, slate-800 in light
+    stroke: themeStore.isDark() ? "#B7C0EE" : "rgb(30 41 59)", // ultraviolet-100 in dark mode, slate-800 in light
+    strokeLight: themeStore.isDark() ? "#CC99FF" : "rgb(148 163 184)", // ultraviolet-200 in dark mode, slate-400 in light
+  });
 
   const stageName = createMemo(
     () => stageNameByExternalId[replayStore.replayData!.settings.stageId]
@@ -15,28 +22,28 @@ export function Stage() {
   return (
     <Switch>
       <Match when={stageName() === "Battlefield"}>
-        <Battlefield />
+        <Battlefield stageColors={stageColors} />
       </Match>
       <Match when={stageName() === "Dream Land N64"}>
-        <Dreamland />
+        <Dreamland stageColors={stageColors} />
       </Match>
       <Match when={stageName() === "Final Destination"}>
-        <FinalDestination />
+        <FinalDestination stageColors={stageColors} />
       </Match>
       <Match when={stageName() === "Yoshi's Story"}>
-        <YoshisStory />
+        <YoshisStory stageColors={stageColors} />
       </Match>
       <Match when={stageName() === "Fountain of Dreams"}>
-        <FountainOfDreams />
+        <FountainOfDreams stageColors={stageColors} />
       </Match>
       <Match when={stageName() === "Pokémon Stadium"}>
-        <PokemonStadium />
+        <PokemonStadium stageColors={stageColors} />
       </Match>
     </Switch>
   );
 }
 
-function Battlefield() {
+function Battlefield(props: { stageColors: () => any }) {
   const mainStage = [
     "-68.4, 0",
     " 68.4, 0",
@@ -69,11 +76,11 @@ function Battlefield() {
   ];
   return (
     <>
-      <Grid blastzones={blastzones} />
-      <polyline points={mainStage.join(" ")} class="fill-slate-800" />
+      <Grid blastzones={blastzones} stageColors={props.stageColors} />
+      <polyline points={mainStage.join(" ")} fill={props.stageColors().fill} />
       <For each={platforms}>
         {(points) => (
-          <polyline points={points.join(" ")} class="stroke-slate-800" />
+          <polyline points={points.join(" ")} stroke={props.stageColors().stroke} stroke-width="2" fill="none" />
         )}
       </For>
       <rect
@@ -82,13 +89,14 @@ function Battlefield() {
         width={blastzones[1][0] - blastzones[0][0]}
         height={blastzones[1][1] - blastzones[0][1]}
         fill="none"
-        class="stroke-slate-800"
+        stroke={props.stageColors().stroke}
+        stroke-width="1"
       />
     </>
   );
 }
 
-function Dreamland() {
+function Dreamland(props: { stageColors: () => any }) {
   const mainStage = [
     "-76.5, -11",
     "-77.25, 0",
@@ -110,11 +118,11 @@ function Dreamland() {
   ];
   return (
     <>
-      <Grid blastzones={blastzones} />
-      <polyline points={mainStage.join(" ")} class="fill-slate-800" />
+      <Grid blastzones={blastzones} stageColors={props.stageColors} />
+      <polyline points={mainStage.join(" ")} fill={props.stageColors().fill} />
       <For each={platforms}>
         {(points) => (
-          <polyline points={points.join(" ")} class="stroke-slate-800" />
+          <polyline points={points.join(" ")} stroke={props.stageColors().stroke} stroke-width="2" fill="none" />
         )}
       </For>
       <rect
@@ -123,13 +131,14 @@ function Dreamland() {
         width={blastzones[1][0] - blastzones[0][0]}
         height={blastzones[1][1] - blastzones[0][1]}
         fill="none"
-        class="stroke-slate-800"
+        stroke={props.stageColors().stroke}
+        stroke-width="1"
       />
     </>
   );
 }
 
-function FinalDestination() {
+function FinalDestination(props: { stageColors: () => any }) {
   const mainStage = [
     "-85.6, 0",
     "85.6, 0",
@@ -153,21 +162,22 @@ function FinalDestination() {
   ];
   return (
     <>
-      <Grid blastzones={blastzones} />
-      <polyline points={mainStage.join(" ")} class="fill-slate-800" />
+      <Grid blastzones={blastzones} stageColors={props.stageColors} />
+      <polyline points={mainStage.join(" ")} fill={props.stageColors().fill} />
       <rect
         x={blastzones[0][0]}
         y={blastzones[0][1]}
         width={blastzones[1][0] - blastzones[0][0]}
         height={blastzones[1][1] - blastzones[0][1]}
         fill="none"
-        class="stroke-slate-800"
+        stroke={props.stageColors().stroke}
+        stroke-width="1"
       />
     </>
   );
 }
 
-function YoshisStory() {
+function YoshisStory(props: { stageColors: () => any }) {
   const mainStage = [
     "-54, -91",
     "-54, -47",
@@ -292,30 +302,32 @@ function YoshisStory() {
   ];
   return (
     <>
-      <Grid blastzones={blastzones} />
+      <Grid blastzones={blastzones} stageColors={props.stageColors} />
       <polyline
         points={mainStage.join(" ")}
-        class="fill-slate-800 stroke-slate-800"
+        fill={props.stageColors().fill}
+        stroke={props.stageColors().stroke}
       />
       <For each={platforms}>
         {(points) => (
-          <polyline points={points.join(" ")} class="stroke-slate-800" />
+          <polyline points={points.join(" ")} stroke={props.stageColors().stroke} stroke-width="2" fill="none" />
         )}
       </For>
-      <polyline points={randall().join(" ")} class="stroke-slate-400" />
+      <polyline points={randall().join(" ")} stroke={props.stageColors().strokeLight} />
       <rect
         x={blastzones[0][0]}
         y={blastzones[0][1]}
         width={blastzones[1][0] - blastzones[0][0]}
         height={blastzones[1][1] - blastzones[0][1]}
         fill="none"
-        class="stroke-slate-800"
+        stroke={props.stageColors().stroke}
+        stroke-width="1"
       />
     </>
   );
 }
 
-function FountainOfDreams() {
+function FountainOfDreams(props: { stageColors: () => any }) {
   const mainStage = [
     "-63.33, 0.62",
     "-53.5, 0.62",
@@ -386,20 +398,20 @@ function FountainOfDreams() {
   ];
   return (
     <>
-      <Grid blastzones={blastzones} />
-      <polyline points={mainStage.join(" ")} class="fill-slate-800" />
+      <Grid blastzones={blastzones} stageColors={props.stageColors} />
+      <polyline points={mainStage.join(" ")} fill={props.stageColors().fill} />
       <For each={platforms().slice(0, 2)}>
         {(points) => (
           <polyline
             points={points.join(" ")}
+            stroke={props.stageColors().stroke}
             stroke-dasharray={heightsKnown() ? undefined : "2,4"}
-            class="stroke-slate-800"
           />
         )}
       </For>
       <polyline
         points={platforms()[platforms().length - 1].join(" ")}
-        class="stroke-slate-800"
+        stroke={props.stageColors().stroke}
       />
       <rect
         x={blastzones[0][0]}
@@ -407,13 +419,14 @@ function FountainOfDreams() {
         width={blastzones[1][0] - blastzones[0][0]}
         height={blastzones[1][1] - blastzones[0][1]}
         fill="none"
-        class="stroke-slate-800"
+        stroke={props.stageColors().stroke}
+        stroke-width="1"
       />
     </>
   );
 }
 
-function PokemonStadium() {
+function PokemonStadium(props: { stageColors: () => any }) {
   const mainStage = [
     "87.75, 0",
     "87.75, -4",
@@ -443,11 +456,11 @@ function PokemonStadium() {
   ];
   return (
     <>
-      <Grid blastzones={blastzones} />
-      <polyline points={mainStage.join(" ")} class="fill-slate-800" />
+      <Grid blastzones={blastzones} stageColors={props.stageColors} />
+      <polyline points={mainStage.join(" ")} fill={props.stageColors().fill} />
       <For each={platforms}>
         {(points) => (
-          <polyline points={points.join(" ")} class="stroke-slate-800" />
+          <polyline points={points.join(" ")} stroke={props.stageColors().stroke} stroke-width="2" fill="none" />
         )}
       </For>
       <rect
@@ -456,12 +469,13 @@ function PokemonStadium() {
         width={blastzones[1][0] - blastzones[0][0]}
         height={blastzones[1][1] - blastzones[0][1]}
         fill="none"
-        class="stroke-slate-800"
+        stroke={props.stageColors().stroke}
+        stroke-width="1"
       />
     </>
   );
 }
-function Grid(props: { blastzones: number[][] }) {
+function Grid(props: { blastzones: number[][]; stageColors: () => any }) {
   const lines = createMemo(() => {
     const left = props.blastzones[0][0];
     const bottom = props.blastzones[0][1];
@@ -485,6 +499,7 @@ function Grid(props: { blastzones: number[][] }) {
           x2={x2}
           y1={y1}
           y2={y2}
+          stroke={props.stageColors().strokeLight}
         />
       )}
     </For>

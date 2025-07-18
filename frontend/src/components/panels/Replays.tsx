@@ -6,6 +6,7 @@ import { ReplayStub, SelectionStore, currentCategory, setCurrentCategory, initCa
 import { characterNameByExternalId } from "~/common/ids";
 import { API_CONFIG } from "~/config";
 import { createEffect } from "solid-js";
+import { themeStore } from "~/state/themeStore";
 
 interface PlayerInfo {
   tag: string;
@@ -89,10 +90,10 @@ export function Replays(props: { selectionStore: SelectionStore }) {
 
     return (
         <>
-          <div class="flex max-h-96 w-full flex-col items-center gap-2 overflow-y-auto sm:h-full md:max-h-screen">
+          <div class="flex max-h-96 w-full flex-col items-center gap-2 overflow-y-auto pl-4 pr-4 py-4 sm:h-full md:max-h-screen">
             {/* Category Selection */}
             <div class="w-full">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Tech Skill Category</label>
+              <label class="block text-sm font-medium text-theme-primary mb-1">Tech Skill Category</label>
               <div class="flex items-center gap-2">
                 <div class="flex-1 relative">
                   <Show when={currentCategory()} keyed>
@@ -101,7 +102,7 @@ export function Replays(props: { selectionStore: SelectionStore }) {
                       return (
                         <>
                           <Select
-                            class="w-full rounded border border-slate-600 bg-white"
+                            class="w-full rounded border border-theme-primary bg-theme-primary text-theme-primary"
                             placeholder="Select tech skill category"
                             {...categoryFilterProps}
                             initialValue={currentOption}
@@ -114,7 +115,7 @@ export function Replays(props: { selectionStore: SelectionStore }) {
                   </Show>
                 </div>
                 <button
-                  class="ml-2 rounded border border-slate-400 bg-white hover:bg-slate-100 disabled:opacity-50 flex items-center justify-center"
+                  class="ml-2 rounded border border-theme-primary bg-theme-primary hover:bg-theme-tertiary disabled:opacity-50 flex items-center justify-center text-theme-primary transition-colors duration-200"
                   title="Refresh category"
                   onClick={handleRefreshCategory}
                   disabled={loadingCategory()}
@@ -138,9 +139,9 @@ export function Replays(props: { selectionStore: SelectionStore }) {
               onkeydown={(e: Event) => e.stopPropagation()}
               onkeyup={(e: Event) => e.stopPropagation()}
             >
-              <label class="block text-sm font-medium text-gray-700 mb-1">Filter by Stage or Player</label>
+              <label class="block text-sm font-medium text-theme-primary mb-1">Filter by Stage or Player</label>
               <Select
-                class="w-full rounded border border-slate-600 bg-white"
+                class="w-full rounded border border-theme-primary bg-theme-primary text-theme-primary"
                 placeholder="Filter by stage or player name"
                 multiple
                 {...stageFilterProps}
@@ -150,7 +151,7 @@ export function Replays(props: { selectionStore: SelectionStore }) {
 
             <Show
               when={() => sortedFilteredStubs().length > 0}
-              fallback={<div>No matching results</div>}
+              fallback={<div class="text-theme-secondary">No matching results</div>}
             >
               <Picker
                 items={sortedFilteredStubs()}
@@ -241,22 +242,32 @@ function GameInfo(props: { replayStub: ReplayStub, loading?: boolean }) {
   }
 
   return (
-    <div class={`h-32 p-3 pb-8 border-b border-gray-200 hover:bg-gray-50 mb-1 ${bugged() ? 'bg-yellow-100' : ''}`}>
+    <div class={`h-32 p-3 pb-8 border-b border-theme-primary mb-1 transition-colors duration-200 ${
+      !themeStore.isDark() && 'hover:bg-gray-50'
+    } ${
+      bugged() && !themeStore.isDark() ? 'bg-yellow-100' : ''
+    }`} style={themeStore.isDark() ? { 'background-image': 'none' } : {}}>
       {/* Header with stage and date */}
       <div class="flex items-center justify-between mb-2">
         <div class="flex items-center gap-2">
           <StageBadge stageId={props.replayStub.stageId} />
-          <div class="text-sm text-gray-600">
+          <div class="text-sm text-theme-secondary">
             {new Date(props.replayStub.matchId).toLocaleDateString()}
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <div class="text-xs text-gray-500">
+          <div class="text-xs text-theme-muted">
             Frames {props.replayStub.frameStart}-{props.replayStub.frameEnd}
           </div>
           {/* Bugged toggle button */}
           <button
-            class={`ml-2 p-1 rounded text-lg ${bugged() ? 'bg-yellow-400 text-black' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'} ${loading() ? 'opacity-50' : ''}`}
+            class={`ml-2 p-1 rounded text-lg transition-colors duration-200 ${
+              bugged() 
+                ? (themeStore.isDark() ? 'bg-venom-magenta-500 text-white' : 'bg-yellow-400 text-black')
+                : (themeStore.isDark() 
+                    ? 'bg-charred-graphite-500 text-theme-primary hover:bg-charred-graphite-400' 
+                    : 'bg-gray-200 text-gray-600 hover:bg-gray-300')
+            } ${loading() ? 'opacity-50' : ''}`}
             title={bugged() ? 'Mark as not bugged' : 'Mark as bugged'}
             onClick={(e) => {
               e.stopPropagation(); // Prevent event bubbling
@@ -268,19 +279,21 @@ function GameInfo(props: { replayStub: ReplayStub, loading?: boolean }) {
           </button>
           {/* Loading spinner for replay fetch */}
           <Show when={props.loading}>
-            <span class="ml-2 animate-spin inline-block w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full"></span>
+            <span class={`ml-2 animate-spin inline-block w-5 h-5 border-2 border-t-transparent rounded-full ${
+              themeStore.isDark() ? 'border-ultraviolet-400' : 'border-gray-400'
+            }`}></span>
           </Show>
         </div>
       </div>
       
       {/* Player information */}
       <div class="space-y-1">
-        <div class="text-xs font-medium text-gray-700">Players:</div>
+        <div class="text-xs font-medium text-theme-primary">Players:</div>
         {players.map((player) => (
-          <div class="flex items-center gap-2 text-xs text-gray-600 pl-2">
+          <div class="flex items-center gap-2 text-xs text-theme-secondary pl-2">
             <PlayerBadge port={player.playerIndex} />
             <span class="font-medium">{player.tag}</span>
-            <span class="text-gray-500">
+            <span class="text-theme-muted">
               ({characterNameByExternalId[player.characterId] || `Character ${player.characterId}`})
             </span>
           </div>

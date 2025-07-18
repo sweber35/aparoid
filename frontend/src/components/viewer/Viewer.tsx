@@ -14,7 +14,7 @@ export function Viewer() {
   return (
     <div class="flex flex-col overflow-y-auto pb-4">
       <Show when={replayStore.replayData}>
-        <svg class="rounded-t border bg-slate-50" viewBox="-365 -300 730 600">
+        <svg class="rounded-t border border-theme-primary bg-theme-secondary" viewBox="-365 -300 730 600">
           {/* up = positive y axis */}
           <g class="-scale-y-100">
             <Camera>

@@ -13,6 +13,7 @@ import { replayStore } from "~/state/awsStore";
 import { fetchAnimations } from "~/viewer/animationCache";
 import "~/state/fileStore";
 import "~/state/awsStore";
+import "~/state/themeStore"; // Initialize theme system
 import { setSidebar } from "~/state/navigationStore";
 
 export function App() {

@@ -6,6 +6,7 @@ import {
 } from "~/common/ids";
 import { PlayerInputs } from "~/common/types";
 import { getPlayerColor, replayStore } from "~/state/awsStore";
+import { themeStore } from "~/state/themeStore";
 
 export function Inputs() {
   const indexes = [0, 1, 2, 3];
@@ -156,8 +157,8 @@ function Controller(
         />
         <circle
           id="cStick"
-          fill="yellow"
-          stroke="black"
+          fill={themeStore.isDark() ? "#00E887" : "yellow"} // ecto-green in dark mode
+          stroke={themeStore.isDark() ? "#4A4A4A" : "black"} // charred-graphite in dark mode
           stroke-width={2.5}
           cx={395.2 + (inputs()?.processed.cStickX ?? 0) * 19.5}
           cy={411.6 - (inputs()?.processed.cStickY ?? 0) * 19.5}

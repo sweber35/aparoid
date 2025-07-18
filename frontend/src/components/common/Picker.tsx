@@ -1,5 +1,6 @@
 import { For, JSX } from "solid-js";
 import { createVirtualizer } from "@tanstack/solid-virtual";
+import { themeStore } from "~/state/themeStore";
 
 export function Picker<T>(props: {
   items: T[];
@@ -22,7 +23,7 @@ export function Picker<T>(props: {
 
   return (
     <>
-      <div ref={scrollParentRef} class="w-full overflow-auto">
+      <div ref={scrollParentRef} class={`w-full overflow-auto ${themeStore.isDark() ? 'bg-void-500' : ''}`}>
         <div
           class="relative w-full"
           style={{ height: `${virtualizer.getTotalSize()}px` }}
@@ -45,13 +46,27 @@ export function Picker<T>(props: {
               return (
                 <div
                   role="button"
-                  class="absolute top-0 left-0 w-full overflow-hidden whitespace-nowrap border p-1 hover:bg-slate-100"
-                  style={{ transform: `translateY(${item.start}px)` }}
+                  class={`absolute top-0 left-0 w-full overflow-hidden whitespace-nowrap border border-theme-primary p-1 transition-colors duration-200 ${
+                    themeStore.isDark() 
+                      ? 'hover:bg-ultraviolet-600 hover:bg-opacity-40' 
+                      : 'hover:bg-slate-100'
+                  }`}
+                  style={{ 
+                    transform: `translateY(${item.start}px)`,
+                    ...(themeStore.isDark() 
+                      ? {
+                          backgroundColor: props.selected(stub, item.index) ? '#6000FF' : '#0B0A1C', // ultraviolet for selected, void for unselected
+                          color: '#ffffff', // white text for contrast in dark mode
+                          borderColor: '#4A4A4A', // charred-graphite border
+                          backgroundImage: 'none', // Override any inherited backgrounds
+                          background: props.selected(stub, item.index) ? '#6000FF' : '#0B0A1C' // Force background override
+                        }
+                      : props.selected(stub, item.index) 
+                        ? { backgroundColor: 'rgb(226 232 240)', color: 'inherit' } // slate-200 for light mode selected
+                        : {})
+                  }}
                   classList={{
-                    "bg-slate-200 hover:bg-slate-300": props.selected(
-                      stub,
-                      item.index
-                    ),
+                    'hover:bg-slate-300': !themeStore.isDark() && props.selected(stub, item.index),
                   }}
                   onClick={() => props.onClick(stub, item.index)}
                 >
