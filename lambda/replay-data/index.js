@@ -233,8 +233,8 @@ exports.handler = async (event) => {
         const matchSettings = {
             ...matchSettingsResults[0],
             frameCount: Number(matchSettingsResults[0].frameCount),
-            stage: Number(matchSettingsResults[0].stage),
-            timer: Number(matchSettingsResults[0].timer),
+            stageId: Number(matchSettingsResults[0].stageId),
+            timerStart: Number(matchSettingsResults[0].timerStart),
             ...matchSettingsDefaults
         };
 
@@ -348,8 +348,11 @@ exports.handler = async (event) => {
             ORDER BY frame ASC
         `;
         console.log('platformsQuery', platformsQuery);
-        const platformFrames = await runAthenaQuery(platformsQuery, isFullReplayRequest);
-        console.log('platformFrames:', platformFrames);
+        let platformFrames = [];
+        if (matchSettings.stageId === 2) {
+            console.log('Stage is Fountain of Dreams, fetching platform frames...');
+            platformFrames = await runAthenaQuery(platformsQuery, isFullReplayRequest);
+        }
 
         const groupedFrames = new Map();
 
@@ -502,8 +505,9 @@ exports.handler = async (event) => {
                 items
             };
 
-            // Add stage data only if platform data exists
-            if (platformFrame) {
+            if (platformFrames.length > 0) {
+                const platformFrame = platformFrames[relativeFrameNumber] || { leftHeight: 20.0, rightHeight: 27.44186047 };
+
                 frameData.stage = {
                     frameNumber: relativeFrameNumber,
                     fodLeftPlatformHeight: Number(platformFrame.leftHeight),
