@@ -106,61 +106,61 @@ exports.handler = async (event) => {
       const query = generateSequenceQuery(actions, 120);
       console.log('query:', query);
 
-      const ledgedashStubsQuery = `
-        SELECT
-        lds.match_id AS matchId,
-        CASE 
-            WHEN lds.sequence_start - 120 < 0 THEN 0
-            ELSE lds.sequence_start - 120
-        END AS frameStart,
-        lds.sequence_end + 120 AS frameEnd,
-        ms.stage AS stageId,
-        ARRAY_AGG(
-            ROW(ps.player_tag, ps.ext_char)
-        ) AS players
-        FROM ledge_dash_summary lds
-        JOIN match_settings ms
-        ON lds.match_id = ms.match_id
-        JOIN player_settings ps
-        ON lds.match_id = ps.match_id
-        GROUP BY
-        lds.match_id,
-        ms.stage,
-        CASE 
-            WHEN lds.sequence_start - 120 < 0 THEN 0
-            ELSE lds.sequence_start - 120
-        END,
-        lds.sequence_end + 120
-        ${matchId ? `WHERE matchId = ${matchId}` : ''}
-      `;
+    //   const ledgedashStubsQuery = `
+    //     SELECT
+    //     lds.match_id AS matchId,
+    //     CASE 
+    //         WHEN lds.sequence_start - 120 < 0 THEN 0
+    //         ELSE lds.sequence_start - 120
+    //     END AS frameStart,
+    //     lds.sequence_end + 120 AS frameEnd,
+    //     ms.stage AS stageId,
+    //     ARRAY_AGG(
+    //         ROW(ps.player_tag, ps.ext_char)
+    //     ) AS players
+    //     FROM ledge_dash_summary lds
+    //     JOIN match_settings ms
+    //     ON lds.match_id = ms.match_id
+    //     JOIN player_settings ps
+    //     ON lds.match_id = ps.match_id
+    //     GROUP BY
+    //     lds.match_id,
+    //     ms.stage,
+    //     CASE 
+    //         WHEN lds.sequence_start - 120 < 0 THEN 0
+    //         ELSE lds.sequence_start - 120
+    //     END,
+    //     lds.sequence_end + 120
+    //     ${matchId ? `WHERE matchId = ${matchId}` : ''}
+    //   `;
 
-    const shineGrabStubsQuery = `
-        SELECT
-        sgs.match_id AS matchId,
-        CASE 
-            WHEN sgs.sequence_start - 120 < 0 THEN 0
-            ELSE sgs.sequence_start - 120
-        END AS frameStart,
-        sgs.sequence_end + 120 AS frameEnd,
-        ms.stage AS stageId,
-        ARRAY_AGG(
-            ROW(ps.player_tag, ps.ext_char)
-        ) AS players
-        FROM shine_grabs sgs
-        JOIN match_settings ms
-        ON sgs.match_id = ms.match_id
-        JOIN player_settings ps
-        ON sgs.match_id = ps.match_id
-        GROUP BY
-        sgs.match_id,
-        ms.stage,
-        CASE 
-            WHEN sgs.sequence_start - 120 < 0 THEN 0
-            ELSE sgs.sequence_start - 120
-        END,
-        sgs.sequence_end + 120
-        ${matchId ? `WHERE matchId = ${matchId}` : ''}
-    `;
+    // const shineGrabStubsQuery = `
+    //     SELECT
+    //     sgs.match_id AS matchId,
+    //     CASE 
+    //         WHEN sgs.sequence_start - 120 < 0 THEN 0
+    //         ELSE sgs.sequence_start - 120
+    //     END AS frameStart,
+    //     sgs.sequence_end + 120 AS frameEnd,
+    //     ms.stage AS stageId,
+    //     ARRAY_AGG(
+    //         ROW(ps.player_tag, ps.ext_char)
+    //     ) AS players
+    //     FROM shine_grabs sgs
+    //     JOIN match_settings ms
+    //     ON sgs.match_id = ms.match_id
+    //     JOIN player_settings ps
+    //     ON sgs.match_id = ps.match_id
+    //     GROUP BY
+    //     sgs.match_id,
+    //     ms.stage,
+    //     CASE 
+    //         WHEN sgs.sequence_start - 120 < 0 THEN 0
+    //         ELSE sgs.sequence_start - 120
+    //     END,
+    //     sgs.sequence_end + 120
+    //     ${matchId ? `WHERE matchId = ${matchId}` : ''}
+    // `;
 
       results = await runAthenaQuery(query);
 

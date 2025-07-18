@@ -104,6 +104,8 @@ function generateSequenceQuery(actionDefs, bufferFrames) {
     SELECT
       ms.match_id as matchId,
       ms.stage as stageId,
+      vc.sequence_start as originalSequenceStart,
+      vc.sequence_end as originalSequenceEnd,
       CASE
         WHEN vc.sequence_start - ${bufferFrames} < 0 THEN 0
         ELSE vc.sequence_start - ${bufferFrames}
