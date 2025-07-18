@@ -496,21 +496,26 @@ exports.handler = async (event) => {
                 });
             }
 
-            // Stage state - simple lookup since we have platform data for every frame
+            // Only include stage data if platform data exists
             const platformFrame = platformFrames.find(pf => Number(pf.frameNumber) === frameNumber);
-            const stageState = {
-                frameNumber: relativeFrameNumber,
-                fodLeftPlatformHeight: platformFrame ? Number(platformFrame.leftHeight) : 20.0,
-                fodRightPlatformHeight: platformFrame ? Number(platformFrame.rightHeight) : 27.44186047
-            };
-
-            frames.push({
+            
+            const frameData = {
                 frameNumber: relativeFrameNumber,
                 randomSeed: Number(frameGroup[0].seed), // should be the same for all players in that frame
                 players,
-                items,
-                stage: stageState
-            });
+                items
+            };
+
+            // Add stage data only if platform data exists
+            if (platformFrame) {
+                frameData.stage = {
+                    frameNumber: relativeFrameNumber,
+                    fodLeftPlatformHeight: Number(platformFrame.leftHeight),
+                    fodRightPlatformHeight: Number(platformFrame.rightHeight)
+                };
+            }
+
+            frames.push(frameData);
         }
         
         console.log('Final frames array length:', frames.length);
