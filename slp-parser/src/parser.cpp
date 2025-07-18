@@ -587,11 +587,19 @@ namespace slip {
       frame_data = &_replay.platform_frames.back();
     }
     
-    // Update the appropriate platform height
+    // Update the appropriate platform height for this frame and all subsequent frames
     if (platform == 0) { // Right platform
-      frame_data->right_height = height;
+      for (auto& pf : _replay.platform_frames) {
+        if (pf.frame >= frame) {
+          pf.right_height = height;
+        }
+      }
     } else if (platform == 1) { // Left platform
-      frame_data->left_height = height;
+      for (auto& pf : _replay.platform_frames) {
+        if (pf.frame >= frame) {
+          pf.left_height = height;
+        }
+      }
     }
   }
 
