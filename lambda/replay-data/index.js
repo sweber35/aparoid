@@ -342,7 +342,7 @@ exports.handler = async (event) => {
                 frame as frameNumber,
                 left_height as leftHeight,
                 right_height as rightHeight
-            FROM platform_frames
+            FROM platforms
             WHERE match_id = '${matchId}'
             ${!isFullReplayRequest ? `AND frame BETWEEN ${relativeFrameStart} AND ${relativeFrameEnd}` : ''}
             ORDER BY frame ASC
