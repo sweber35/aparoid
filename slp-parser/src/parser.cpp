@@ -543,26 +543,26 @@ namespace slip {
   }
 
   bool Parser::_parseFodPlatform() {
-    DOUT2("  Parsing FoD platform event at byte " << +_bp);
-    int32_t fnum = readBE4S(&_rb[_bp+O_FRAME]);
-    int32_t f    = fnum - LOAD_FRAME;
-
-    if (fnum < LOAD_FRAME) {
-      FAIL_CORRUPT("    Frame index " << fnum << " less than " << +LOAD_FRAME);
-      return false;
-    }
-    if (fnum >= _max_frames) {
-      FAIL_CORRUPT("    Frame index " << fnum << " greater than max frames computed from reported raw size ("
-        << _max_frames << ")");
-      return false;
-    }
-
-    uint8_t platform = _rb[_bp+O_PLATFORM];
-    float platform_height = readBE4F(&_rb[_bp+O_PLAT_HEIGHT]);
-
-    // Update platform frames data for Fountain of Dreams (stage = 2)
     if (_replay.stage == 2) {
-      _updatePlatformFrames(f, platform, platform_height);
+      DOUT2("  Parsing FoD platform event at byte " << +_bp);
+      int32_t fnum = readBE4S(&_rb[_bp+O_FRAME]);
+      int32_t f    = fnum - LOAD_FRAME;
+
+      if (fnum < LOAD_FRAME) {
+        FAIL_CORRUPT("    Frame index " << fnum << " less than " << +LOAD_FRAME);
+        return false;
+      }
+      if (fnum >= _max_frames) {
+        FAIL_CORRUPT("    Frame index " << fnum << " greater than max frames computed from reported raw size ("
+          << _max_frames << ")");
+        return false;
+      }
+
+      uint8_t platform = _rb[_bp+O_PLATFORM];
+      float platform_height = readBE4F(&_rb[_bp+O_PLAT_HEIGHT]);
+
+      // Update platform frames data for Fountain of Dreams (stage = 2)
+        _updatePlatformFrames(f, platform, platform_height);
     }
 
     return true;
@@ -605,7 +605,8 @@ namespace slip {
 
   void Parser::_initializePlatformFrames() {
     // Initialize platform frames for every frame with default heights
-    for (int32_t frame = 0; frame < _replay.frame_count; ++frame) {
+    // Use _max_frames to initialize all possible frames that could exist in the replay
+    for (int32_t frame = 0; frame < _max_frames; ++frame) {
       SlippiFodPlatformFrame frame_data = { frame, 20.0f, 27.44186047f }; // Default heights from constants.ts
       _replay.platform_frames.push_back(frame_data);
     }
