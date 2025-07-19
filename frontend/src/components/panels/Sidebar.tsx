@@ -89,7 +89,11 @@ export function Sidebar() {
                         {/* Import buttons */}
                         <div class="p-4 space-y-3 border-t border-theme-primary">
                             <button
-                                class="w-full bg-accent-primary hover:bg-ultraviolet-600 text-white px-4 py-2 rounded text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent-primary focus:ring-offset-2"
+                                class={`w-full px-4 py-2 rounded text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                    themeStore.isDark() 
+                                        ? 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus:ring-accent-primary' 
+                                        : 'bg-white border border-accent-primary text-accent-primary hover:bg-accent-primary hover:text-white focus:ring-accent-primary'
+                                }`}
                                 onClick={() => setIsImportModalOpen(true)}
                             >
                                 Import JSON Replay
@@ -110,7 +114,7 @@ export function Sidebar() {
                 {(store) => (
                     <>
                         {/* Desktop Layout */}
-                        <div class="hidden h-screen w-full bg-theme-secondary border-r border-theme-primary lg:block lg:w-80">
+                        <div class="hidden h-screen w-full bg-theme-secondary border-theme-primary lg:block lg:w-80">
                             {/* Header with theme toggle */}
                             <div class="flex items-center justify-between p-4 border-b border-theme-primary">
                                 <h2 class="text-lg font-semibold text-theme-primary">Replays</h2>
@@ -126,7 +130,11 @@ export function Sidebar() {
                             <div class="p-4 space-y-3 border-t border-theme-primary">
                                 <button
                                     onClick={() => setIsImportModalOpen(true)}
-                                    class="w-full bg-accent-primary hover:bg-ultraviolet-600 text-white px-4 py-2 rounded text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent-primary focus:ring-offset-2"
+                                    class={`w-full px-4 py-2 rounded text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                        themeStore.isDark() 
+                                            ? 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus:ring-accent-primary' 
+                                            : 'bg-white border border-accent-primary text-accent-primary hover:bg-accent-primary hover:text-white focus:ring-accent-primary'
+                                    }`}
                                 >
                                     Import JSON Replay
                                 </button>
@@ -156,7 +164,11 @@ export function Sidebar() {
                             <div class="mt-4 space-y-3">
                                 <button
                                     onClick={() => setIsImportModalOpen(true)}
-                                    class="w-full bg-accent-primary hover:bg-ultraviolet-600 text-white px-4 py-2 rounded text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent-primary focus:ring-offset-2"
+                                    class={`w-full px-4 py-2 rounded text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                        themeStore.isDark() 
+                                            ? 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus:ring-accent-primary' 
+                                            : 'bg-white border border-accent-primary text-accent-primary hover:bg-accent-primary hover:text-white focus:ring-accent-primary'
+                                    }`}
                                 >
                                     Import JSON Replay
                                 </button>
@@ -188,7 +200,11 @@ export function Sidebar() {
                             Select a JSON replay file to import and view.
                         </div>
                         
-                        <label class="cursor-pointer bg-accent-primary hover:bg-ultraviolet-600 text-white px-4 py-2 rounded text-sm inline-block transition-colors duration-200 focus-within:ring-2 focus-within:ring-accent-primary focus-within:ring-offset-2">
+                        <label class={`cursor-pointer px-4 py-2 rounded text-sm inline-block transition-colors duration-200 focus-within:ring-2 focus-within:ring-offset-2 ${
+                            themeStore.isDark() 
+                                ? 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus-within:ring-accent-primary' 
+                                : 'bg-white border border-accent-primary text-accent-primary hover:bg-accent-primary hover:text-white focus-within:ring-accent-primary'
+                        }`}>
                             Choose JSON File
                             <input
                                 type="file"

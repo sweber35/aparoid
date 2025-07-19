@@ -102,7 +102,9 @@ export function Replays(props: { selectionStore: SelectionStore }) {
                       return (
                         <>
                           <Select
-                            class="w-full rounded border border-theme-primary bg-theme-primary text-theme-primary"
+                            class={`w-full rounded border bg-theme-primary text-theme-primary ${
+                              themeStore.isDark() ? 'border-theme-primary' : 'border-white'
+                            }`}
                             placeholder="Select tech skill category"
                             {...categoryFilterProps}
                             initialValue={currentOption}
@@ -115,7 +117,9 @@ export function Replays(props: { selectionStore: SelectionStore }) {
                   </Show>
                 </div>
                 <button
-                  class="ml-2 rounded border border-theme-primary bg-theme-primary hover:bg-theme-tertiary disabled:opacity-50 flex items-center justify-center text-theme-primary transition-colors duration-200"
+                  class={`ml-2 rounded border bg-theme-primary hover:bg-theme-tertiary disabled:opacity-50 flex items-center justify-center text-theme-primary transition-colors duration-200 ${
+                    themeStore.isDark() ? 'border-theme-primary' : 'border-white'
+                  }`}
                   title="Refresh category"
                   onClick={handleRefreshCategory}
                   disabled={loadingCategory()}
@@ -141,7 +145,9 @@ export function Replays(props: { selectionStore: SelectionStore }) {
             >
               <label class="block text-sm font-medium text-theme-primary mb-1">Filter by Stage or Player</label>
               <Select
-                class="w-full rounded border border-theme-primary bg-theme-primary text-theme-primary"
+                class={`w-full rounded border bg-theme-primary text-theme-primary ${
+                  themeStore.isDark() ? 'border-theme-primary' : 'border-white'
+                }`}
                 placeholder="Filter by stage or player name"
                 multiple
                 {...stageFilterProps}

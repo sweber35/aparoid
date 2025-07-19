@@ -60,7 +60,7 @@ export function App() {
         }
       >
         <div
-          class="flex h-full flex-col-reverse gap-4 lg:h-screen lg:flex-row"
+          class="flex h-full flex-col-reverse lg:h-screen lg:flex-row"
           ref={dropzoneRef}
         >
           {/*<Navigation />*/}

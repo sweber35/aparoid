@@ -20,7 +20,7 @@
 /* Dark theme using the new palette */
 .dark {
   --bg-primary: #0B0A1C; /* void */
-  --bg-secondary: #1a1830; /* slightly lighter void */
+  --bg-secondary: #0B0A1C; /* void */
   --bg-tertiary: #2d2a45; /* charred-graphite with void tint */
   --text-primary: #ffffff;
   --text-secondary: #e2e8f0;
