@@ -62,7 +62,6 @@ export function Replays(props: { selectionStore: SelectionStore }) {
         });
     });
     
-    const [loadingStubKey, setLoadingStubKey] = createSignal<string | null>(null);
     const [loadingCategory, setLoadingCategory] = createSignal(false);
 
     // Handle category change with loading state
@@ -160,16 +159,12 @@ export function Replays(props: { selectionStore: SelectionStore }) {
                   <GameInfo
                     replayStub={stub}
                     loading={
-                      loadingStubKey() === `${stub.matchId}-${stub.frameStart}-${stub.frameEnd}`
+                      props.selectionStore.data.loadingStubKey === `${stub.matchId}-${stub.frameStart}-${stub.frameEnd}`
                     }
                   />
                 )}
                 onClick={async (fileAndSettings, idx) => {
-                  const stub = sortedFilteredStubs()[idx];
-                  const key = `${stub.matchId}-${stub.frameStart}-${stub.frameEnd}`;
-                  setLoadingStubKey(key);
                   await props.selectionStore.select(fileAndSettings);
-                  setLoadingStubKey(null);
                 }}
                 selected={(stub) =>
                   props.selectionStore.data?.selectedFileAndStub?.[1] === stub
