@@ -1,4 +1,4 @@
-import { For, JSX } from "solid-js";
+import { For, JSX, createSignal, createEffect } from "solid-js";
 import { createVirtualizer } from "@tanstack/solid-virtual";
 import { themeStore } from "~/state/themeStore";
 
@@ -10,6 +10,33 @@ export function Picker<T>(props: {
   estimateSize: (item: T, index: number) => number;
 }) {
   let scrollParentRef: HTMLDivElement | undefined;
+  
+  // Track previous and current selected indices for animation
+  const [prevSelectedIndex, setPrevSelectedIndex] = createSignal<number | null>(null);
+  const [currentSelectedIndex, setCurrentSelectedIndex] = createSignal<number | null>(null);
+  const [isAnimating, setIsAnimating] = createSignal(false);
+  const [animationDirection, setAnimationDirection] = createSignal<'up' | 'down' | null>(null);
+  
+  // Update selected indices when selection changes
+  createEffect(() => {
+    const newSelectedIndex = props.items.findIndex((item, index) => props.selected(item, index));
+    if (newSelectedIndex !== -1 && newSelectedIndex !== currentSelectedIndex()) {
+      const prev = currentSelectedIndex();
+      setPrevSelectedIndex(prev);
+      setCurrentSelectedIndex(newSelectedIndex);
+      
+      // Check if animation should occur (within 6 items)
+      if (prev !== null && Math.abs(newSelectedIndex - prev) <= 6) {
+        setAnimationDirection(newSelectedIndex > prev ? 'down' : 'up');
+        setIsAnimating(true);
+        // Reset animation flag after animation completes
+        setTimeout(() => {
+          setIsAnimating(false);
+          setAnimationDirection(null);
+        }, 300);
+      }
+    }
+  });
 
   const virtualizer = createVirtualizer({
     get count() {
@@ -77,25 +104,27 @@ export function Picker<T>(props: {
                   onClick={() => props.onClick(stub, item.index)}
                 >
                   {props.render(stub, item.index)}
-                  {/* Green stripe for selected items - positioned outside content flow */}
-                  {props.selected(stub, item.index) && (
-                    <div 
-                      style={{
-                        position: 'absolute',
-                        left: '-1px', // Overlap the border slightly
-                        top: '-1px',
-                        bottom: '-1px',
-                        width: '4px',
-                        'background-color': '#00E887',
-                        'z-index': '10',
-                        'pointer-events': 'none'
-                      }}
-                    />
-                  )}
                 </div>
               );
             }}
           </For>
+          
+          {/* Single animated green stripe that moves between positions */}
+          {currentSelectedIndex() !== null && (
+            <div 
+              style={{
+                position: 'absolute',
+                left: '-1px',
+                top: `${virtualizer.getVirtualItems().find((item: { start: number; index: number }) => item.index === currentSelectedIndex())?.start || 0}px`,
+                height: `${props.estimateSize(props.items[currentSelectedIndex()!], currentSelectedIndex()!)}px`,
+                width: '4px',
+                'background-color': '#00E887',
+                'z-index': '10',
+                'pointer-events': 'none',
+                transition: isAnimating() ? 'top 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none'
+              }}
+            />
+          )}
         </div>
       </div>
     </>
