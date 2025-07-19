@@ -78,26 +78,26 @@ export function Picker<T>(props: {
                       ? 'hover:bg-ultraviolet-600 hover:bg-opacity-40' 
                       : 'hover:bg-slate-100'
                   }`}
-                  style={{ 
-                    transform: `translateY(${item.start}px)`,
-                    ...(themeStore.isDark() 
-                      ? {
-                          backgroundColor: '#0B0A1C', // void for all items
-                          color: '#ffffff', // white text for contrast in dark mode
-                          border: '1px solid #4A4A4A', // normal border for all sides
-                          backgroundImage: 'none', // Override any inherited backgrounds
-                          background: '#0B0A1C' // Force background override
-                        }
-                      : props.selected(stub, item.index) 
-                        ? { 
-                            backgroundColor: '#ffffff', // white background for selected in light mode
-                            border: '1px solid #e2e8f0', // normal border for all sides
-                            color: 'inherit' 
-                          }
-                        : {
-                            border: '1px solid #e2e8f0' // normal border for unselected in light mode
-                          })
-                  }}
+                                          style={{ 
+                          transform: `translateY(${item.start}px)`,
+                          ...(themeStore.isDark() 
+                            ? {
+                                backgroundColor: '#0B0A1C', // void for all items
+                                color: '#ffffff', // white text for contrast in dark mode
+                                border: 'none', // Remove border in dark mode
+                                backgroundImage: 'none', // Override any inherited backgrounds
+                                background: '#0B0A1C' // Force background override
+                              }
+                            : props.selected(stub, item.index) 
+                              ? { 
+                                  backgroundColor: '#ffffff', // white background for selected in light mode
+                                  border: '1px solid #e2e8f0', // normal border for all sides
+                                  color: 'inherit' 
+                                }
+                              : {
+                                  border: '1px solid #e2e8f0' // normal border for unselected in light mode
+                                })
+                        }}
                   classList={{
                     'hover:bg-slate-300': !themeStore.isDark() && props.selected(stub, item.index),
                   }}

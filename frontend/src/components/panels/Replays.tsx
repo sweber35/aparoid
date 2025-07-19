@@ -102,8 +102,10 @@ export function Replays(props: { selectionStore: SelectionStore }) {
                       return (
                         <>
                           <Select
-                            class={`w-full rounded border bg-theme-primary text-theme-primary ${
-                              themeStore.isDark() ? 'border-theme-primary' : 'border-white'
+                            class={`w-full rounded ${
+                              themeStore.isDark() 
+                                ? 'bg-void-500 text-white' 
+                                : 'bg-theme-primary text-theme-primary border border-white'
                             }`}
                             placeholder="Select tech skill category"
                             {...categoryFilterProps}
@@ -117,8 +119,10 @@ export function Replays(props: { selectionStore: SelectionStore }) {
                   </Show>
                 </div>
                 <button
-                  class={`ml-2 rounded border bg-theme-primary hover:bg-theme-tertiary disabled:opacity-50 flex items-center justify-center text-theme-primary transition-colors duration-200 ${
-                    themeStore.isDark() ? 'border-theme-primary' : 'border-white'
+                  class={`ml-2 rounded border disabled:opacity-50 flex items-center justify-center transition-colors duration-200 ${
+                    themeStore.isDark() 
+                      ? 'bg-void-500 hover:bg-void-400 text-white' 
+                      : 'bg-theme-secondary hover:bg-theme-tertiary text-theme-primary border-theme-primary'
                   }`}
                   title="Refresh category"
                   onClick={handleRefreshCategory}
@@ -145,8 +149,10 @@ export function Replays(props: { selectionStore: SelectionStore }) {
             >
               <label class="block text-sm font-medium text-theme-primary mb-1">Filter by Stage or Player</label>
               <Select
-                class={`w-full rounded border bg-theme-primary text-theme-primary ${
-                  themeStore.isDark() ? 'border-theme-primary' : 'border-white'
+                class={`w-full rounded ${
+                  themeStore.isDark() 
+                    ? 'bg-void-500 text-white' 
+                    : 'bg-theme-primary text-theme-primary border border-white'
                 }`}
                 placeholder="Filter by stage or player name"
                 multiple

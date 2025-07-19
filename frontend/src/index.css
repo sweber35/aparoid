@@ -19,7 +19,7 @@
 
 /* Dark theme using the new palette */
 .dark {
-  --bg-primary: #0B0A1C; /* void */
+  --bg-primary: #1A1A2E; /* lighter void */
   --bg-secondary: #0B0A1C; /* void */
   --bg-tertiary: #2d2a45; /* charred-graphite with void tint */
   --text-primary: #ffffff;
@@ -95,5 +95,37 @@ body {
   
   .bg-success {
     background-color: var(--success-color);
+  }
+  
+  /* Override solid-select borders in dark mode */
+  .dark .ss-main {
+    border: none !important;
+    border-color: transparent !important;
+  }
+  
+  .dark .ss-single-selected {
+    border: none !important;
+    border-color: transparent !important;
+  }
+  
+  .dark .ss-multi-selected {
+    border: none !important;
+    border-color: transparent !important;
+  }
+  
+  /* Override any border classes in dark mode for select components */
+  .dark .ss-main.border {
+    border: none !important;
+    border-color: transparent !important;
+  }
+  
+  .dark .ss-single-selected.border {
+    border: none !important;
+    border-color: transparent !important;
+  }
+  
+  .dark .ss-multi-selected.border {
+    border: none !important;
+    border-color: transparent !important;
   }
 }

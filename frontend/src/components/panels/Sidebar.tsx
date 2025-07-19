@@ -52,7 +52,7 @@ export function Sidebar() {
                 when={currentSelectionStore()}
                 keyed
                 fallback={
-                    <div class="flex h-screen w-full flex-col justify-between bg-theme-secondary border-r border-theme-primary lg:w-80">
+                    <div class="flex h-screen w-full flex-col justify-between bg-theme-primary border-r border-theme-primary lg:w-80">
                         {/* Header with theme toggle */}
                         <div class="flex items-center justify-between p-4 border-b border-theme-primary">
                             <h2 class="text-lg font-semibold text-theme-primary">Aparoid</h2>
@@ -92,7 +92,7 @@ export function Sidebar() {
                                 class={`w-full px-4 py-2 rounded text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                                     themeStore.isDark() 
                                         ? 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus:ring-accent-primary' 
-                                        : 'bg-white border border-accent-primary text-accent-primary hover:bg-accent-primary hover:text-white focus:ring-accent-primary'
+                                        : 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus:ring-accent-primary'
                                 }`}
                                 onClick={() => setIsImportModalOpen(true)}
                             >
@@ -114,7 +114,7 @@ export function Sidebar() {
                 {(store) => (
                     <>
                         {/* Desktop Layout */}
-                        <div class="hidden h-screen w-full bg-theme-secondary border-theme-primary lg:block lg:w-80">
+                        <div class="hidden h-screen w-full bg-theme-primary border-theme-primary lg:block lg:w-80">
                             {/* Header with theme toggle */}
                             <div class="flex items-center justify-between p-4 border-b border-theme-primary">
                                 <h2 class="text-lg font-semibold text-theme-primary">Replays</h2>
@@ -133,7 +133,7 @@ export function Sidebar() {
                                     class={`w-full px-4 py-2 rounded text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                                         themeStore.isDark() 
                                             ? 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus:ring-accent-primary' 
-                                            : 'bg-white border border-accent-primary text-accent-primary hover:bg-accent-primary hover:text-white focus:ring-accent-primary'
+                                            : 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus:ring-accent-primary'
                                     }`}
                                 >
                                     Import JSON Replay
@@ -141,7 +141,7 @@ export function Sidebar() {
                                 
                                 <label class={`w-full px-4 py-2 rounded text-sm font-medium cursor-pointer inline-block text-center transition-colors duration-200 ${
                                     themeStore.isDark() 
-                                        ? 'bg-ecto-green-500 hover:bg-ecto-green-600 text-void-900 focus-within:ring-2 focus-within:ring-ecto-green-500 focus-within:ring-offset-2' 
+                                        ? 'bg-ecto-green-500 hover:bg-ecto-green-600 text-void-600 focus-within:ring-2 focus-within:ring-ecto-green-500 focus-within:ring-offset-2' 
                                         : 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus-within:ring-2 focus-within:ring-accent-primary focus-within:ring-offset-2'
                                 }`}>
                                     Upload .slp files
@@ -167,7 +167,7 @@ export function Sidebar() {
                                     class={`w-full px-4 py-2 rounded text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                                         themeStore.isDark() 
                                             ? 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus:ring-accent-primary' 
-                                            : 'bg-white border border-accent-primary text-accent-primary hover:bg-accent-primary hover:text-white focus:ring-accent-primary'
+                                            : 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus:ring-accent-primary'
                                     }`}
                                 >
                                     Import JSON Replay
@@ -175,7 +175,7 @@ export function Sidebar() {
                                 
                                 <label class={`w-full px-4 py-2 rounded text-sm font-medium cursor-pointer inline-block text-center transition-colors duration-200 ${
                                     themeStore.isDark() 
-                                        ? 'bg-ecto-green-500 hover:bg-ecto-green-600 text-void-900 focus-within:ring-2 focus-within:ring-ecto-green-500 focus-within:ring-offset-2' 
+                                        ? 'bg-ecto-green-500 hover:bg-ecto-green-600 text-void-600 focus-within:ring-2 focus-within:ring-ecto-green-500 focus-within:ring-offset-2' 
                                         : 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus-within:ring-2 focus-within:ring-accent-primary focus-within:ring-offset-2'
                                 }`}>
                                     Upload .slp files
