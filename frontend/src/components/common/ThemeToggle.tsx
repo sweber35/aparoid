@@ -4,7 +4,11 @@ export function ThemeToggle() {
   return (
     <button
       onClick={() => themeStore.toggleTheme()}
-      class="group relative inline-flex h-10 w-10 items-center justify-center rounded-lg border border-theme-primary bg-theme-secondary transition-all duration-300 hover:bg-theme-tertiary focus:outline-none focus:ring-2 focus:ring-accent-primary focus:ring-offset-2"
+      class={`group relative inline-flex h-10 w-10 items-center justify-center rounded-lg border transition-all duration-300 hover:bg-theme-tertiary focus:outline-none focus:ring-2 focus:ring-accent-primary focus:ring-offset-2 ${
+        themeStore.isDark() 
+          ? 'bg-theme-secondary' 
+          : 'bg-theme-secondary border-theme-primary'
+      }`}
       title={`Switch to ${themeStore.isDark() ? "light" : "dark"} theme`}
     >
       {/* Sun icon for light theme */}
