@@ -118,7 +118,7 @@ export function Picker<T>(props: {
                 top: `${virtualizer.getVirtualItems().find((item: { start: number; index: number }) => item.index === currentSelectedIndex())?.start || 0}px`,
                 height: `${props.estimateSize(props.items[currentSelectedIndex()!], currentSelectedIndex()!)}px`,
                 width: '4px',
-                'background-color': '#00E887',
+                'background-color': themeStore.isDark() ? '#00E887' : '#44A963',
                 'z-index': '10',
                 'pointer-events': 'none',
                 transition: isAnimating() ? 'top 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none'
