@@ -173,6 +173,7 @@ export function Replays(props: { selectionStore: SelectionStore }) {
                     loading={
                       props.selectionStore.data.loadingStubKey === `${stub.matchId}-${stub.frameStart}-${stub.frameEnd}`
                     }
+                    selected={props.selectionStore.data?.selectedFileAndStub?.[1] === stub}
                   />
                 )}
                 onClick={async (fileAndSettings, idx) => {
@@ -189,7 +190,7 @@ export function Replays(props: { selectionStore: SelectionStore }) {
     );
 }
 
-function GameInfo(props: { replayStub: ReplayStub, loading?: boolean }) {
+function GameInfo(props: { replayStub: ReplayStub, loading?: boolean, selected?: boolean }) {
   const [bugged, setBugged] = createSignal(props.replayStub.bugged ?? false);
   const [loading, setLoading] = createSignal(false);
 
@@ -252,6 +253,8 @@ function GameInfo(props: { replayStub: ReplayStub, loading?: boolean }) {
   return (
     <div class={`h-32 p-3 pb-8 border-theme-primary mb-1 transition-colors duration-200 ${
       !themeStore.isDark() && 'hover:bg-gray-50'
+    } ${
+      themeStore.isDark() && 'hover:bg-void-400'
     } ${
       bugged() && !themeStore.isDark() ? 'bg-yellow-100' : ''
     }`} style={themeStore.isDark() ? { 'background-image': 'none' } : {}}>
