@@ -7,6 +7,7 @@ import { characterNameByExternalId } from "~/common/ids";
 import { API_CONFIG } from "~/config";
 import { createEffect } from "solid-js";
 import { themeStore } from "~/state/themeStore";
+import { replayStore } from "~/state/awsStore";
 
 interface PlayerInfo {
   tag: string;
@@ -242,7 +243,7 @@ function GameInfo(props: { replayStub: ReplayStub, loading?: boolean }) {
   }
 
   return (
-    <div class={`h-32 p-3 pb-8 border-b border-theme-primary mb-1 transition-colors duration-200 ${
+    <div class={`h-32 p-3 pb-8 border-theme-primary mb-1 transition-colors duration-200 ${
       !themeStore.isDark() && 'hover:bg-gray-50'
     } ${
       bugged() && !themeStore.isDark() ? 'bg-yellow-100' : ''
@@ -256,33 +257,53 @@ function GameInfo(props: { replayStub: ReplayStub, loading?: boolean }) {
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <div class="text-xs text-theme-muted">
-            Frames {props.replayStub.frameStart}-{props.replayStub.frameEnd}
-          </div>
-          {/* Bugged toggle button */}
-          <button
-            class={`ml-2 p-1 rounded text-lg transition-colors duration-200 ${
-              bugged() 
-                ? (themeStore.isDark() ? 'bg-venom-magenta-500 text-white' : 'bg-yellow-400 text-black')
-                : (themeStore.isDark() 
-                    ? 'bg-charred-graphite-500 text-theme-primary hover:bg-charred-graphite-400' 
-                    : 'bg-gray-200 text-gray-600 hover:bg-gray-300')
-            } ${loading() ? 'opacity-50' : ''}`}
-            title={bugged() ? 'Mark as not bugged' : 'Mark as bugged'}
-            onClick={(e) => {
-              e.stopPropagation(); // Prevent event bubbling
-              toggleBugged();
-            }}
-            disabled={loading()}
-          >
-            {bugged() ? '🐞' : '🪲'}
-          </button>
-          {/* Loading spinner for replay fetch */}
-          <Show when={props.loading}>
-            <span class={`ml-2 animate-spin inline-block w-5 h-5 border-2 border-t-transparent rounded-full ${
-              themeStore.isDark() ? 'border-ultraviolet-400' : 'border-gray-400'
-            }`}></span>
+          <Show when={replayStore.isDebug}>
+            <div class="text-xs text-theme-muted">
+              Frames {props.replayStub.frameStart}-{props.replayStub.frameEnd}
+            </div>
           </Show>
+                    {/* Bugged toggle button or loading spinner */}
+          {props.loading ? (
+            <div class="ml-2 p-1 rounded text-lg">
+              <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <rect x="1" y="1" rx="1" width="10" height="10" fill={themeStore.isDark() ? "#00E887" : "#9CA3AF"}>
+                  <animate id="spinner_c7A9" begin="0;spinner_23zP.end" attributeName="x" dur="0.2s" values="1;13" fill="freeze" />
+                  <animate id="spinner_Acnw" begin="spinner_ZmWi.end" attributeName="y" dur="0.2s" values="1;13" fill="freeze" />
+                  <animate id="spinner_iIcm" begin="spinner_zfQN.end" attributeName="x" dur="0.2s" values="13;1" fill="freeze" />
+                  <animate id="spinner_WX4U" begin="spinner_rRAc.end" attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
+                </rect>
+                <rect x="1" y="13" rx="1" width="10" height="10" fill={themeStore.isDark() ? "#00E887" : "#9CA3AF"}>
+                  <animate id="spinner_YLx7" begin="spinner_c7A9.end" attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
+                  <animate id="spinner_vwnJ" begin="spinner_Acnw.end" attributeName="x" dur="0.2s" values="1;13" fill="freeze" />
+                  <animate id="spinner_KQuy" begin="spinner_iIcm.end" attributeName="y" dur="0.2s" values="1;13" fill="freeze" />
+                  <animate id="spinner_arKy" begin="spinner_WX4U.end" attributeName="x" dur="0.2s" values="13;1" fill="freeze" />
+                </rect>
+                <rect x="13" y="13" rx="1" width="10" height="10" fill={themeStore.isDark() ? "#00E887" : "#9CA3AF"}>
+                  <animate id="spinner_ZmWi" begin="spinner_YLx7.end" attributeName="x" dur="0.2s" values="13;1" fill="freeze" />
+                  <animate id="spinner_zfQN" begin="spinner_vwnJ.end" attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
+                  <animate id="spinner_rRAc" begin="spinner_KQuy.end" attributeName="x" dur="0.2s" values="1;13" fill="freeze" />
+                  <animate id="spinner_23zP" begin="spinner_arKy.end" attributeName="y" dur="0.2s" values="1;13" fill="freeze" />
+                </rect>
+              </svg>
+            </div>
+          ) : (
+            <button
+              class={`ml-2 p-1 rounded text-lg transition-colors duration-200 ${
+                bugged() 
+                  ? (themeStore.isDark() ? 'bg-venom-magenta-500 text-white' : 'bg-yellow-400 text-black')
+                  : (themeStore.isDark() 
+                      ? 'bg-charred-graphite-500 text-theme-primary hover:bg-charred-graphite-400' 
+                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300')
+              }`}
+              title={bugged() ? 'Mark as not bugged' : 'Mark as bugged'}
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent event bubbling
+                toggleBugged();
+              }}
+            >
+              {bugged() ? '🐞' : '🪲'}
+            </button>
+          )}
         </div>
       </div>
       

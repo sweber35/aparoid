@@ -4,6 +4,7 @@ import { Show, createSignal } from "solid-js";
 import { ReplayData } from "~/common/types";
 import { ReplayStub } from "~/state/awsSelectionStore";
 import { ThemeToggle } from "~/components/common/ThemeToggle";
+import { themeStore } from "~/state/themeStore";
 
 export function Sidebar() {
     const [isImportModalOpen, setIsImportModalOpen] = createSignal(false);
@@ -60,7 +61,29 @@ export function Sidebar() {
                         
                         {/* Loading state */}
                         <div class="flex-1 flex items-center justify-center">
-                            <div class="text-theme-secondary">Loading replays...</div>
+                            <div class="flex flex-col items-center gap-4">
+                                <svg width="48" height="48" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                  <rect x="1" y="1" rx="1" width="10" height="10" fill={themeStore.isDark() ? "#00E887" : "#9CA3AF"}>
+                                    <animate id="spinner_loading1" begin="0;spinner_loading8.end" attributeName="x" dur="0.2s" values="1;13" fill="freeze" />
+                                    <animate id="spinner_loading2" begin="spinner_loading5.end" attributeName="y" dur="0.2s" values="1;13" fill="freeze" />
+                                    <animate id="spinner_loading3" begin="spinner_loading6.end" attributeName="x" dur="0.2s" values="13;1" fill="freeze" />
+                                    <animate id="spinner_loading4" begin="spinner_loading7.end" attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
+                                  </rect>
+                                  <rect x="1" y="13" rx="1" width="10" height="10" fill={themeStore.isDark() ? "#00E887" : "#9CA3AF"}>
+                                    <animate id="spinner_loading5" begin="spinner_loading1.end" attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
+                                    <animate id="spinner_loading6" begin="spinner_loading2.end" attributeName="x" dur="0.2s" values="1;13" fill="freeze" />
+                                    <animate id="spinner_loading7" begin="spinner_loading3.end" attributeName="y" dur="0.2s" values="1;13" fill="freeze" />
+                                    <animate id="spinner_loading8" begin="spinner_loading4.end" attributeName="x" dur="0.2s" values="13;1" fill="freeze" />
+                                  </rect>
+                                  <rect x="13" y="13" rx="1" width="10" height="10" fill={themeStore.isDark() ? "#00E887" : "#9CA3AF"}>
+                                    <animate id="spinner_loading9" begin="spinner_loading5.end" attributeName="x" dur="0.2s" values="13;1" fill="freeze" />
+                                    <animate id="spinner_loading10" begin="spinner_loading6.end" attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
+                                    <animate id="spinner_loading11" begin="spinner_loading7.end" attributeName="x" dur="0.2s" values="1;13" fill="freeze" />
+                                    <animate id="spinner_loading12" begin="spinner_loading8.end" attributeName="y" dur="0.2s" values="1;13" fill="freeze" />
+                                  </rect>
+                                </svg>
+                                <div class="text-theme-secondary">Loading replays...</div>
+                            </div>
                         </div>
                         
                         {/* Import buttons */}
@@ -72,7 +95,11 @@ export function Sidebar() {
                                 Import JSON Replay
                             </button>
                             
-                            <label class="w-full bg-ecto-green-500 hover:bg-ecto-green-600 text-void-900 px-4 py-2 rounded text-sm font-medium cursor-pointer inline-block text-center transition-colors duration-200 focus-within:ring-2 focus-within:ring-ecto-green-500 focus-within:ring-offset-2">
+                            <label class={`w-full px-4 py-2 rounded text-sm font-medium cursor-pointer inline-block text-center transition-colors duration-200 ${
+                                themeStore.isDark() 
+                                    ? 'bg-ecto-green-500 hover:bg-ecto-green-600 text-void-900 focus-within:ring-2 focus-within:ring-ecto-green-500 focus-within:ring-offset-2' 
+                                    : 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus-within:ring-2 focus-within:ring-accent-primary focus-within:ring-offset-2'
+                            }`}>
                                 Upload .slp files
                                 <input type="file" multiple accept=".slp" class="hidden" />
                             </label>
@@ -104,7 +131,11 @@ export function Sidebar() {
                                     Import JSON Replay
                                 </button>
                                 
-                                <label class="w-full bg-ecto-green-500 hover:bg-ecto-green-600 text-void-900 px-4 py-2 rounded text-sm font-medium cursor-pointer inline-block text-center transition-colors duration-200 focus-within:ring-2 focus-within:ring-ecto-green-500 focus-within:ring-offset-2">
+                                <label class={`w-full px-4 py-2 rounded text-sm font-medium cursor-pointer inline-block text-center transition-colors duration-200 ${
+                                    themeStore.isDark() 
+                                        ? 'bg-ecto-green-500 hover:bg-ecto-green-600 text-void-900 focus-within:ring-2 focus-within:ring-ecto-green-500 focus-within:ring-offset-2' 
+                                        : 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus-within:ring-2 focus-within:ring-accent-primary focus-within:ring-offset-2'
+                                }`}>
                                     Upload .slp files
                                     <input type="file" multiple accept=".slp" class="hidden" />
                                 </label>
@@ -130,7 +161,11 @@ export function Sidebar() {
                                     Import JSON Replay
                                 </button>
                                 
-                                <label class="w-full bg-ecto-green-500 hover:bg-ecto-green-600 text-void-900 px-4 py-2 rounded text-sm font-medium cursor-pointer inline-block text-center transition-colors duration-200 focus-within:ring-2 focus-within:ring-ecto-green-500 focus-within:ring-offset-2">
+                                <label class={`w-full px-4 py-2 rounded text-sm font-medium cursor-pointer inline-block text-center transition-colors duration-200 ${
+                                    themeStore.isDark() 
+                                        ? 'bg-ecto-green-500 hover:bg-ecto-green-600 text-void-900 focus-within:ring-2 focus-within:ring-ecto-green-500 focus-within:ring-offset-2' 
+                                        : 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus-within:ring-2 focus-within:ring-accent-primary focus-within:ring-offset-2'
+                                }`}>
                                     Upload .slp files
                                     <input type="file" multiple accept=".slp" class="hidden" />
                                 </label>

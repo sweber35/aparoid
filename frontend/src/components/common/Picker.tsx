@@ -46,7 +46,7 @@ export function Picker<T>(props: {
               return (
                 <div
                   role="button"
-                  class={`absolute top-0 left-0 w-full overflow-hidden whitespace-nowrap border border-theme-primary p-1 transition-colors duration-200 ${
+                  class={`absolute top-0 left-0 w-full overflow-hidden whitespace-nowrap p-1 transition-colors duration-200 ${
                     themeStore.isDark() 
                       ? 'hover:bg-ultraviolet-600 hover:bg-opacity-40' 
                       : 'hover:bg-slate-100'
@@ -55,15 +55,21 @@ export function Picker<T>(props: {
                     transform: `translateY(${item.start}px)`,
                     ...(themeStore.isDark() 
                       ? {
-                          backgroundColor: props.selected(stub, item.index) ? '#6000FF' : '#0B0A1C', // ultraviolet for selected, void for unselected
+                          backgroundColor: '#0B0A1C', // void for all items
                           color: '#ffffff', // white text for contrast in dark mode
-                          borderColor: '#4A4A4A', // charred-graphite border
+                          border: '1px solid #4A4A4A', // normal border for all sides
                           backgroundImage: 'none', // Override any inherited backgrounds
-                          background: props.selected(stub, item.index) ? '#6000FF' : '#0B0A1C' // Force background override
+                          background: '#0B0A1C' // Force background override
                         }
                       : props.selected(stub, item.index) 
-                        ? { backgroundColor: 'rgb(226 232 240)', color: 'inherit' } // slate-200 for light mode selected
-                        : {})
+                        ? { 
+                            backgroundColor: '#ffffff', // white background for selected in light mode
+                            border: '1px solid #e2e8f0', // normal border for all sides
+                            color: 'inherit' 
+                          }
+                        : {
+                            border: '1px solid #e2e8f0' // normal border for unselected in light mode
+                          })
                   }}
                   classList={{
                     'hover:bg-slate-300': !themeStore.isDark() && props.selected(stub, item.index),
@@ -71,6 +77,21 @@ export function Picker<T>(props: {
                   onClick={() => props.onClick(stub, item.index)}
                 >
                   {props.render(stub, item.index)}
+                  {/* Green stripe for selected items - positioned outside content flow */}
+                  {props.selected(stub, item.index) && (
+                    <div 
+                      style={{
+                        position: 'absolute',
+                        left: '-1px', // Overlap the border slightly
+                        top: '-1px',
+                        bottom: '-1px',
+                        width: '4px',
+                        'background-color': '#00E887',
+                        'z-index': '10',
+                        'pointer-events': 'none'
+                      }}
+                    />
+                  )}
                 </div>
               );
             }}
