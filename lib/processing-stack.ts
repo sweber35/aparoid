@@ -50,6 +50,13 @@ export class ProcessingStack extends cdk.Stack {
       props.tagTableName
     );
 
+    // Import the cache bucket from StorageStack
+    const replayCacheBucket = s3.Bucket.fromBucketName(
+      this,
+      'aparoid-replay-cache-bucket',
+      props.replayCacheBucketName
+    );
+
     // Slippc Lambda layer
     const slippcLayer = new lambda.LayerVersion(this, 'aparoid-slippc-layer', {
       layerVersionName: `aparoid-slippc-layer`,
@@ -115,6 +122,7 @@ export class ProcessingStack extends cdk.Stack {
         TAG_TABLE_NAME: props.tagTableName,
         GLUE_DATABASE: props.glueDatabaseName,
         QUERY_OUTPUT_LOCATION: props.athenaOutputLocation,
+        CACHE_BUCKET: props.replayCacheBucketName,
       },
       timeout: cdk.Duration.minutes(5),
       memorySize: 512,
@@ -297,6 +305,9 @@ export class ProcessingStack extends cdk.Stack {
     // Grant S3 permissions to the Replay Stub Lambda for Athena query results
     processedSlpDataBucket.grantWrite(this.replayStubLambda);
     
+    // Grant cache bucket permissions to the Replay Stub Lambda
+    replayCacheBucket.grantReadWrite(this.replayStubLambda);
+    
     // Grant additional S3 permissions for Athena output location
     this.replayStubLambda.addToRolePolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
@@ -313,11 +324,6 @@ export class ProcessingStack extends cdk.Stack {
       ],
     }));
     
-    const replayCacheBucket = s3.Bucket.fromBucketName(
-      this,
-      'aparoid-replay-cache-bucket',
-      props.replayCacheBucketName
-    );
     replayCacheBucket.grantReadWrite(this.replayDataLambda);
     
     // Grant permissions to the Replay Tag Lambda function

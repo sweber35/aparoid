@@ -40,6 +40,27 @@ export async function loadStubsForActionSequence(actionSequence: {action: Action
 
     const payload = await res.json();
 
+    // Start a background request to get fresh results after a short delay
+    setTimeout(async () => {
+        try {
+            const freshRes = await fetch(API_CONFIG.replayStub, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ actions: actionSequence }),
+            });
+
+            const freshPayload = await freshRes.json();
+            
+            // Update the store with fresh results if they're different
+            const category = currentCategory();
+            if (categoryStores[category]) {
+                categoryStores[category].setSelectionState("stubs", freshPayload);
+            }
+        } catch (error) {
+            console.error('Background refresh failed:', error);
+        }
+    }, 2000); // Wait 2 seconds before making the background request
+
     return payload;
 }
 
