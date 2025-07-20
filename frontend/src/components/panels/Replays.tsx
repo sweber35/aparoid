@@ -90,7 +90,7 @@ export function Replays(props: { selectionStore: SelectionStore }) {
 
     return (
         <>
-          <div class="flex max-h-96 w-full flex-col items-center gap-2 overflow-y-auto pl-4 pr-4 py-4 sm:h-full md:max-h-screen">
+          <div class="flex max-h-96 w-full flex-col items-center gap-2 overflow-y-auto pl-4 pr-4 py-4 sm:h-full md:max-h-screen" style={themeStore.isDark() ? { 'border': 'none' } : {}}>
             {/* Category Selection */}
             <div class="w-full">
               <label class="block text-sm font-medium text-theme-primary mb-1">Tech Skill Category</label>
@@ -182,7 +182,7 @@ export function Replays(props: { selectionStore: SelectionStore }) {
                 selected={(stub) =>
                   props.selectionStore.data?.selectedFileAndStub?.[1] === stub
                 }
-                estimateSize={(stub) => 140}
+                estimateSize={(stub) => 144}
               />
             </Show>
           </div>
@@ -251,7 +251,7 @@ function GameInfo(props: { replayStub: ReplayStub, loading?: boolean, selected?:
   }
 
   return (
-    <div class={`h-32 p-3 pb-8 border-theme-primary mb-1 transition-colors duration-200 ${
+    <div class={`h-32 px-3 py-2 transition-colors duration-200 ${
       !themeStore.isDark() && 'hover:bg-gray-50'
     } ${
       themeStore.isDark() && 'hover:bg-void-400'

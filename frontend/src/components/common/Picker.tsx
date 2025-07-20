@@ -73,7 +73,7 @@ export function Picker<T>(props: {
               return (
                 <div
                   role="button"
-                  class={`absolute top-0 left-0 w-full overflow-hidden whitespace-nowrap p-1 transition-colors duration-200 ${
+                  class={`absolute top-0 left-0 w-full overflow-hidden whitespace-nowrap transition-colors duration-200 ${
                     themeStore.isDark() 
                       ? 'hover:bg-ultraviolet-600 hover:bg-opacity-40' 
                       : 'hover:bg-slate-100'
@@ -116,7 +116,7 @@ export function Picker<T>(props: {
                 position: 'absolute',
                 left: '-1px',
                 top: `${virtualizer.getVirtualItems().find((item: { start: number; index: number }) => item.index === currentSelectedIndex())?.start || 0}px`,
-                height: `${props.estimateSize(props.items[currentSelectedIndex()!], currentSelectedIndex()!)}px`,
+                height: '128px',
                 width: '4px',
                 'background-color': themeStore.isDark() ? '#00E887' : '#44A963',
                 'z-index': '10',
