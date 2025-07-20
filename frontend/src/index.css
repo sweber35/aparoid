@@ -36,7 +36,8 @@
 html, body {
   margin: 0;
   padding: 0;
-  height: 100%;
+  height: 100vh;
+  height: 100dvh; /* Dynamic viewport height for mobile */
   width: 100%;
   overflow: hidden;
   transition: background-color 0.3s ease;
@@ -60,6 +61,7 @@ body {
   grid-template-areas:
     "Sidebar Viewer";
   height: 100vh;
+  height: 100dvh; /* Dynamic viewport height for mobile */
   width: 100vw;
   max-width: 100vw;
   margin: 0;

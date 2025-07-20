@@ -53,7 +53,7 @@ export function App() {
       <Show
         when={!replayStore.isFullscreen}
         fallback={
-          <div class="flex h-screen flex-col justify-between overflow-y-auto">
+          <div class="flex h-screen h-[100dvh] flex-col justify-between overflow-y-auto">
             <Viewer />
             <DebugPanel />
           </div>
