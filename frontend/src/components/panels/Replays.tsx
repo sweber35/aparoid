@@ -156,7 +156,7 @@ export function Replays(props: { selectionStore: SelectionStore }) {
                       ? 'bg-void-500 text-white' 
                       : 'bg-theme-primary text-theme-primary border border-white'
                   }`}
-                  placeholder="Filter by stage or player name"
+                  placeholder="Filter by stage or player"
                   multiple
                   {...stageFilterProps}
                   onChange={props.selectionStore.setFilters}
