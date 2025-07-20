@@ -73,7 +73,7 @@ body {
   grid-area: Viewer;
   overflow: hidden;
   background-color: var(--bg-primary);
-  margin: 1rem;
+  margin: 1.25rem;
   border-radius: 0.5rem;
 }
 
@@ -151,6 +151,8 @@ body {
   flex: 1 1 auto;
   overflow-y: auto;
   background-color: var(--bg-primary);
+  margin-left: 1rem;
+  margin-right: 1rem;
 }
 
 /* Custom scrollbar styling for the picker */
