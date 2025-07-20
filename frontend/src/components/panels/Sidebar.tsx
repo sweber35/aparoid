@@ -52,42 +52,44 @@ export function Sidebar() {
                 when={currentSelectionStore()}
                 keyed
                 fallback={
-                    <div class="flex h-screen w-full flex-col justify-between bg-theme-primary border-r border-theme-primary lg:w-80">
+                    <div class="Sidebar">
                         {/* Header with theme toggle */}
-                        <div class="flex items-center justify-between p-4 border-b border-theme-primary">
+                        <div class="ThemeToggle">
                             <h2 class="text-lg font-semibold text-theme-primary">Aparoid</h2>
                             <ThemeToggle />
                         </div>
                         
                         {/* Loading state */}
-                        <div class="flex-1 flex items-center justify-center">
-                            <div class="flex flex-col items-center gap-4">
-                                <svg width="48" height="48" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                  <rect x="1" y="1" rx="1" width="10" height="10" fill={themeStore.isDark() ? "#00E887" : "#9CA3AF"}>
-                                    <animate id="spinner_loading1" begin="0;spinner_loading8.end" attributeName="x" dur="0.2s" values="1;13" fill="freeze" />
-                                    <animate id="spinner_loading2" begin="spinner_loading5.end" attributeName="y" dur="0.2s" values="1;13" fill="freeze" />
-                                    <animate id="spinner_loading3" begin="spinner_loading6.end" attributeName="x" dur="0.2s" values="13;1" fill="freeze" />
-                                    <animate id="spinner_loading4" begin="spinner_loading7.end" attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
-                                  </rect>
-                                  <rect x="1" y="13" rx="1" width="10" height="10" fill={themeStore.isDark() ? "#00E887" : "#9CA3AF"}>
-                                    <animate id="spinner_loading5" begin="spinner_loading1.end" attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
-                                    <animate id="spinner_loading6" begin="spinner_loading2.end" attributeName="x" dur="0.2s" values="1;13" fill="freeze" />
-                                    <animate id="spinner_loading7" begin="spinner_loading3.end" attributeName="y" dur="0.2s" values="1;13" fill="freeze" />
-                                    <animate id="spinner_loading8" begin="spinner_loading4.end" attributeName="x" dur="0.2s" values="13;1" fill="freeze" />
-                                  </rect>
-                                  <rect x="13" y="13" rx="1" width="10" height="10" fill={themeStore.isDark() ? "#00E887" : "#9CA3AF"}>
-                                    <animate id="spinner_loading9" begin="spinner_loading5.end" attributeName="x" dur="0.2s" values="13;1" fill="freeze" />
-                                    <animate id="spinner_loading10" begin="spinner_loading6.end" attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
-                                    <animate id="spinner_loading11" begin="spinner_loading7.end" attributeName="x" dur="0.2s" values="1;13" fill="freeze" />
-                                    <animate id="spinner_loading12" begin="spinner_loading8.end" attributeName="y" dur="0.2s" values="1;13" fill="freeze" />
-                                  </rect>
-                                </svg>
-                                <div class="text-theme-secondary">Loading replays...</div>
+                        <div class="Replays">
+                            <div class="flex-1 flex items-center justify-center">
+                                <div class="flex flex-col items-center gap-4">
+                                    <svg width="48" height="48" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                      <rect x="1" y="1" rx="1" width="10" height="10" fill={themeStore.isDark() ? "#00E887" : "#9CA3AF"}>
+                                        <animate id="spinner_loading1" begin="0;spinner_loading8.end" attributeName="x" dur="0.2s" values="1;13" fill="freeze" />
+                                        <animate id="spinner_loading2" begin="spinner_loading5.end" attributeName="y" dur="0.2s" values="1;13" fill="freeze" />
+                                        <animate id="spinner_loading3" begin="spinner_loading6.end" attributeName="x" dur="0.2s" values="13;1" fill="freeze" />
+                                        <animate id="spinner_loading4" begin="spinner_loading7.end" attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
+                                      </rect>
+                                      <rect x="1" y="13" rx="1" width="10" height="10" fill={themeStore.isDark() ? "#00E887" : "#9CA3AF"}>
+                                        <animate id="spinner_loading5" begin="spinner_loading1.end" attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
+                                        <animate id="spinner_loading6" begin="spinner_loading2.end" attributeName="x" dur="0.2s" values="1;13" fill="freeze" />
+                                        <animate id="spinner_loading7" begin="spinner_loading3.end" attributeName="y" dur="0.2s" values="1;13" fill="freeze" />
+                                        <animate id="spinner_loading8" begin="spinner_loading4.end" attributeName="x" dur="0.2s" values="13;1" fill="freeze" />
+                                      </rect>
+                                      <rect x="13" y="13" rx="1" width="10" height="10" fill={themeStore.isDark() ? "#00E887" : "#9CA3AF"}>
+                                        <animate id="spinner_loading9" begin="spinner_loading5.end" attributeName="x" dur="0.2s" values="13;1" fill="freeze" />
+                                        <animate id="spinner_loading10" begin="spinner_loading6.end" attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
+                                        <animate id="spinner_loading11" begin="spinner_loading7.end" attributeName="x" dur="0.2s" values="1;13" fill="freeze" />
+                                        <animate id="spinner_loading12" begin="spinner_loading8.end" attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
+                                      </rect>
+                                    </svg>
+                                    <div class="text-theme-secondary">Loading replays...</div>
+                                </div>
                             </div>
                         </div>
                         
                         {/* Import buttons */}
-                        <div class="p-4 space-y-3 border-t border-theme-primary">
+                        <div class="ImportButtons">
                             <button
                                 class={`w-full px-4 py-2 rounded text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                                     themeStore.isDark() 
@@ -112,78 +114,41 @@ export function Sidebar() {
                 }
             >
                 {(store) => (
-                    <>
-                        {/* Desktop Layout */}
-                        <div class="hidden h-screen w-full bg-theme-primary border-theme-primary lg:block lg:w-80">
-                            {/* Header with theme toggle */}
-                            <div class="flex items-center justify-between p-4 border-b border-theme-primary">
-                                <h2 class="text-lg font-semibold text-theme-primary">Replays</h2>
-                                <ThemeToggle />
-                            </div>
-                            
-                            {/* Replays content */}
-                            <div class="flex-1 overflow-y-auto max-h-[calc(100vh-200px)]">
-                                <Replays selectionStore={store} />
-                            </div>
-                            
-                            {/* Import buttons */}
-                            <div class="p-4 space-y-3 border-t border-theme-primary">
-                                <button
-                                    onClick={() => setIsImportModalOpen(true)}
-                                    class={`w-full px-4 py-2 rounded text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                                        themeStore.isDark() 
-                                            ? 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus:ring-accent-primary' 
-                                            : 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus:ring-accent-primary'
-                                    }`}
-                                >
-                                    Import JSON Replay
-                                </button>
-                                
-                                <label class={`w-full px-4 py-2 rounded text-sm font-medium cursor-pointer inline-block text-center transition-colors duration-200 ${
-                                    themeStore.isDark() 
-                                        ? 'bg-ecto-green-500 hover:bg-ecto-green-600 text-void-600 focus-within:ring-2 focus-within:ring-ecto-green-500 focus-within:ring-offset-2' 
-                                        : 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus-within:ring-2 focus-within:ring-accent-primary focus-within:ring-offset-2'
-                                }`}>
-                                    Upload .slp files
-                                    <input type="file" multiple accept=".slp" class="hidden" />
-                                </label>
-                            </div>
+                    <div class="Sidebar">
+                        {/* Header with theme toggle */}
+                        <div class="ThemeToggle">
+                            <h2 class="text-lg font-semibold text-theme-primary">Replays</h2>
+                            <ThemeToggle />
                         </div>
-
-                        {/* Mobile Layout */}
-                        <div class="flex flex-col gap-8 px-4 sm:flex-row sm:gap-2 lg:hidden">
-                            {/* Header with theme toggle */}
-                            <div class="flex items-center justify-between mb-4">
-                                <h2 class="text-lg font-semibold text-theme-primary">Replays</h2>
-                                <ThemeToggle />
-                            </div>
-                            
+                        
+                        {/* Replays content */}
+                        <div class="Replays">
                             <Replays selectionStore={store} />
-                            
-                            {/* Import buttons */}
-                            <div class="mt-4 space-y-3">
-                                <button
-                                    onClick={() => setIsImportModalOpen(true)}
-                                    class={`w-full px-4 py-2 rounded text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                                        themeStore.isDark() 
-                                            ? 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus:ring-accent-primary' 
-                                            : 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus:ring-accent-primary'
-                                    }`}
-                                >
-                                    Import JSON Replay
-                                </button>
-                                
-                                <label class={`w-full px-4 py-2 rounded text-sm font-medium cursor-pointer inline-block text-center transition-colors duration-200 ${
-                                    themeStore.isDark() 
-                                        ? 'bg-ecto-green-500 hover:bg-ecto-green-600 text-void-600 focus-within:ring-2 focus-within:ring-ecto-green-500 focus-within:ring-offset-2' 
-                                        : 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus-within:ring-2 focus-within:ring-accent-primary focus-within:ring-offset-2'
-                                }`}>
-                                    Upload .slp files
-                                    <input type="file" multiple accept=".slp" class="hidden" />
-                                </label>
-                            </div>
                         </div>
-                    </>
+                        
+                        {/* Import buttons */}
+                        <div class="ImportButtons">
+                            <button
+                                onClick={() => setIsImportModalOpen(true)}
+                                class={`w-full px-4 py-2 rounded text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                    themeStore.isDark() 
+                                        ? 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus:ring-accent-primary' 
+                                        : 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus:ring-accent-primary'
+                                }`}
+                            >
+                                Import JSON Replay
+                            </button>
+                            
+                            <label class={`w-full px-4 py-2 rounded text-sm font-medium cursor-pointer inline-block text-center transition-colors duration-200 ${
+                                themeStore.isDark() 
+                                    ? 'bg-ecto-green-500 hover:bg-ecto-green-600 text-void-600 focus-within:ring-2 focus-within:ring-ecto-green-500 focus-within:ring-offset-2' 
+                                    : 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus-within:ring-2 focus-within:ring-accent-primary focus-within:ring-offset-2'
+                            }`}>
+                                Upload .slp files
+                                <input type="file" multiple accept=".slp" class="hidden" />
+                            </label>
+                        </div>
+                    </div>
                 )}
             </Show>
 

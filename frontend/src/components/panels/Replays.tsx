@@ -90,101 +90,107 @@ export function Replays(props: { selectionStore: SelectionStore }) {
 
     return (
         <>
-          <div class="flex max-h-96 w-full flex-col items-center gap-2 overflow-y-auto pl-4 pr-4 py-4 sm:h-full md:max-h-screen" style={themeStore.isDark() ? { 'border': 'none' } : {}}>
-            {/* Category Selection */}
-            <div class="w-full">
-              <label class="block text-sm font-medium text-theme-primary mb-1">Tech Skill Category</label>
-              <div class="flex items-center gap-2">
-                <div class="flex-1 relative">
-                  <Show when={currentCategory()} keyed>
-                    {(category) => {
-                      const currentOption = categoryOptions.find(opt => opt.value === category) || categoryOptions[0];
-                      return (
-                        <>
-                          <Select
-                            class={`w-full rounded ${
-                              themeStore.isDark() 
-                                ? 'bg-void-500 text-white' 
-                                : 'bg-theme-primary text-theme-primary border border-white'
-                            }`}
-                            placeholder="Select tech skill category"
-                            {...categoryFilterProps}
-                            initialValue={currentOption}
-                            disabled={loadingCategory()}
-                            onChange={handleCategoryChange}
-                          />
-                        </>
-                      );
-                    }}
-                  </Show>
+          <div class="Replays">
+            {/* Controls Container */}
+            <div class="ControlsContainer">
+              {/* Category Selection */}
+              <div class="w-full">
+                <label class="block text-sm font-medium text-theme-primary mb-1">Tech Skill Category</label>
+                <div class="flex items-center gap-2">
+                  <div class="flex-1 relative">
+                    <Show when={currentCategory()} keyed>
+                      {(category) => {
+                        const currentOption = categoryOptions.find(opt => opt.value === category) || categoryOptions[0];
+                        return (
+                          <>
+                            <Select
+                              class={`w-full rounded ${
+                                themeStore.isDark() 
+                                  ? 'bg-void-500 text-white' 
+                                  : 'bg-theme-primary text-theme-primary border border-white'
+                              }`}
+                              placeholder="Select tech skill category"
+                              {...categoryFilterProps}
+                              initialValue={currentOption}
+                              disabled={loadingCategory()}
+                              onChange={handleCategoryChange}
+                            />
+                          </>
+                        );
+                      }}
+                    </Show>
+                  </div>
+                  <button
+                    class={`ml-2 rounded border disabled:opacity-50 flex items-center justify-center transition-colors duration-200 ${
+                      themeStore.isDark() 
+                        ? 'bg-void-500 hover:bg-void-400 text-white' 
+                        : 'bg-theme-secondary hover:bg-theme-tertiary text-theme-primary border-theme-primary'
+                    }`}
+                    title="Refresh category"
+                    onClick={handleRefreshCategory}
+                    disabled={loadingCategory()}
+                    style={{ height: '38px', width: '38px', padding: 0 }}
+                  >
+                    {loadingCategory() ? (
+                      <span class="animate-spin inline-block w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full"></span>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 19.5A9 9 0 1112 21v-3m0 0l-2.25 2.25M12 18v3" />
+                      </svg>
+                    )}
+                  </button>
                 </div>
-                <button
-                  class={`ml-2 rounded border disabled:opacity-50 flex items-center justify-center transition-colors duration-200 ${
+              </div>
+
+              {/* Stage/Player Filtering */}
+              <div
+                class="w-full"
+                // don't trigger global shortcuts when typing in the filter box
+                onkeydown={(e: Event) => e.stopPropagation()}
+                onkeyup={(e: Event) => e.stopPropagation()}
+              >
+                <label class="block text-sm font-medium text-theme-primary mb-1">Filter by Stage or Player</label>
+                <Select
+                  class={`w-full rounded ${
                     themeStore.isDark() 
-                      ? 'bg-void-500 hover:bg-void-400 text-white' 
-                      : 'bg-theme-secondary hover:bg-theme-tertiary text-theme-primary border-theme-primary'
+                      ? 'bg-void-500 text-white' 
+                      : 'bg-theme-primary text-theme-primary border border-white'
                   }`}
-                  title="Refresh category"
-                  onClick={handleRefreshCategory}
-                  disabled={loadingCategory()}
-                  style={{ height: '38px', width: '38px', padding: 0 }}
-                >
-                  {loadingCategory() ? (
-                    <span class="animate-spin inline-block w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full"></span>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 19.5A9 9 0 1112 21v-3m0 0l-2.25 2.25M12 18v3" />
-                    </svg>
-                  )}
-                </button>
+                  placeholder="Filter by stage or player name"
+                  multiple
+                  {...stageFilterProps}
+                  onChange={props.selectionStore.setFilters}
+                />
               </div>
             </div>
 
-            {/* Stage/Player Filtering */}
-            <div
-              class="w-full"
-              // don't trigger global shortcuts when typing in the filter box
-              onkeydown={(e: Event) => e.stopPropagation()}
-              onkeyup={(e: Event) => e.stopPropagation()}
-            >
-              <label class="block text-sm font-medium text-theme-primary mb-1">Filter by Stage or Player</label>
-              <Select
-                class={`w-full rounded ${
-                  themeStore.isDark() 
-                    ? 'bg-void-500 text-white' 
-                    : 'bg-theme-primary text-theme-primary border border-white'
-                }`}
-                placeholder="Filter by stage or player name"
-                multiple
-                {...stageFilterProps}
-                onChange={props.selectionStore.setFilters}
-              />
+            {/* Picker */}
+            <div class="Picker">
+              <Show
+                when={() => sortedFilteredStubs().length > 0}
+                fallback={<div class="text-theme-secondary">No matching results</div>}
+              >
+                <Picker
+                  items={sortedFilteredStubs()}
+                  render={(stub) => (
+                    <GameInfo
+                      replayStub={stub}
+                      loading={
+                        props.selectionStore.data.loadingStubKey === `${stub.matchId}-${stub.frameStart}-${stub.frameEnd}`
+                      }
+                      selected={props.selectionStore.data?.selectedFileAndStub?.[1] === stub}
+                    />
+                  )}
+                  onClick={async (fileAndSettings, idx) => {
+                    await props.selectionStore.select(fileAndSettings);
+                  }}
+                  selected={(stub) =>
+                    props.selectionStore.data?.selectedFileAndStub?.[1] === stub
+                  }
+                  estimateSize={(stub) => 128}
+                />
+              </Show>
             </div>
-
-            <Show
-              when={() => sortedFilteredStubs().length > 0}
-              fallback={<div class="text-theme-secondary">No matching results</div>}
-            >
-              <Picker
-                items={sortedFilteredStubs()}
-                render={(stub) => (
-                  <GameInfo
-                    replayStub={stub}
-                    loading={
-                      props.selectionStore.data.loadingStubKey === `${stub.matchId}-${stub.frameStart}-${stub.frameEnd}`
-                    }
-                    selected={props.selectionStore.data?.selectedFileAndStub?.[1] === stub}
-                  />
-                )}
-                onClick={async (fileAndSettings, idx) => {
-                  await props.selectionStore.select(fileAndSettings);
-                }}
-                selected={(stub) =>
-                  props.selectionStore.data?.selectedFileAndStub?.[1] === stub
-                }
-                estimateSize={(stub) => 128}
-              />
-            </Show>
           </div>
         </>
     );
@@ -292,7 +298,7 @@ function GameInfo(props: { replayStub: ReplayStub, loading?: boolean, selected?:
                   <animate id="spinner_ZmWi" begin="spinner_YLx7.end" attributeName="x" dur="0.2s" values="13;1" fill="freeze" />
                   <animate id="spinner_zfQN" begin="spinner_vwnJ.end" attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
                   <animate id="spinner_rRAc" begin="spinner_KQuy.end" attributeName="x" dur="0.2s" values="1;13" fill="freeze" />
-                  <animate id="spinner_23zP" begin="spinner_arKy.end" attributeName="y" dur="0.2s" values="1;13" fill="freeze" />
+                  <animate id="spinner_23zP" begin="spinner_arKy.end" attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
                 </rect>
               </svg>
             </div>

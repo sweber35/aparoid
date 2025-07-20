@@ -50,7 +50,7 @@ export function Picker<T>(props: {
 
   return (
     <>
-      <div ref={scrollParentRef} class={`w-full overflow-auto ${themeStore.isDark() ? 'bg-void-500' : ''}`}>
+      <div ref={scrollParentRef} class={`w-full h-full overflow-auto ${themeStore.isDark() ? 'bg-void-500' : ''}`}>
         <div
           class="relative w-full"
           style={{ height: `${virtualizer.getTotalSize()}px` }}
@@ -117,7 +117,7 @@ export function Picker<T>(props: {
                 left: '-1px',
                 top: `${virtualizer.getVirtualItems().find((item: { start: number; index: number }) => item.index === currentSelectedIndex())?.start || 0}px`,
                 height: '128px',
-                width: '4px',
+                width: '5px',
                 'background-color': themeStore.isDark() ? '#00E887' : '#44A963',
                 'z-index': '10',
                 'pointer-events': 'none',
