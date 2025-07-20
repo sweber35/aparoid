@@ -155,7 +155,7 @@ export function Picker<T>(props: {
             <div 
               style={{
                 ...pickerStyles().stripe,
-                top: `${virtualizer.getVirtualItems().find((item: { start: number; index: number }) => item.index === currentSelectedIndex())?.start || 0}px`,
+                top: `${currentSelectedIndex()! * props.estimateSize(props.items[currentSelectedIndex()!], currentSelectedIndex()!)}px`,
                 transition: isAnimating() ? 'top 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none'
               }}
             />
