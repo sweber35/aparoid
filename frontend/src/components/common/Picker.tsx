@@ -51,7 +51,7 @@ export function Picker<T>(props: {
       stripe: {
         position: 'absolute' as const,
         left: '-1px',
-        height: isMobile ? '96px' : '128px',
+        height: isMobile ? '96px' : '96px', // Match the actual content height
         width: '5px',
         'background-color': themeStore.isDark() ? '#00E887' : '#44A963',
         'z-index': '10',
@@ -134,9 +134,9 @@ export function Picker<T>(props: {
                         ? '#ffffff' 
                         : 'transparent',
                     color: themeStore.isDark() ? '#ffffff' : 'inherit',
-                    border: themeStore.isDark() 
-                      ? '1px solid #4A4A4A'
-                      : '1px solid #e2e8f0',
+                    'border-bottom': themeStore.isDark() 
+                      ? '1px solid #2A2A2A'
+                      : '1px solid #e5e7eb',
                     'background-image': 'none',
                   }}
                   classList={{

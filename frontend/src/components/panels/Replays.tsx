@@ -189,7 +189,6 @@ export function Replays(props: { selectionStore: SelectionStore }) {
                 fallback={<div class="text-theme-secondary">No matching results</div>}
               >
                 <Picker
-                  variant="mobile"
                   items={sortedFilteredStubs()}
                   render={(stub) => (
                     <GameInfo
@@ -281,7 +280,7 @@ function GameInfo(props: { replayStub: ReplayStub, loading?: boolean, selected?:
   }
 
   return (
-    <div class={`h-24 px-2 py-1 transition-colors duration-200 ${
+    <div class={`h-full w-full transition-colors duration-200 ${
       !themeStore.isDark() && 'hover:bg-gray-50'
     } ${
       themeStore.isDark() && 'hover:bg-void-400'
@@ -289,10 +288,10 @@ function GameInfo(props: { replayStub: ReplayStub, loading?: boolean, selected?:
       bugged() && !themeStore.isDark() ? 'bg-yellow-100' : ''
     }`} style={themeStore.isDark() ? { 'background-image': 'none' } : {}}>
       {/* Header with stage and date */}
-      <div class="flex items-center justify-between mb-1">
-        <div class="flex items-center gap-1">
+      <div class="flex items-center justify-between mb-2 px-3 pt-2">
+        <div class="flex items-center gap-2">
           <StageBadge stageId={props.replayStub.stageId} />
-          <div class="text-xs text-theme-secondary">
+          <div class="text-sm text-theme-secondary">
             {new Date(props.replayStub.matchId).toLocaleDateString()}
           </div>
         </div>
@@ -348,18 +347,18 @@ function GameInfo(props: { replayStub: ReplayStub, loading?: boolean, selected?:
       </div>
       
       {/* Player information */}
-      <div class="space-y-0.5">
+      <div class="space-y-1 px-3 pb-4">
         {players.map((player) => {
           const characterName = characterNameByExternalId[player.characterId] || `Character ${player.characterId}`;
           const portraitFilename = getCharacterPortraitFilename(characterName);
           
           return (
-            <div class="flex items-center gap-1 text-xs text-theme-secondary">
+            <div class="flex items-center gap-2 text-sm text-theme-secondary">
               <PlayerBadge port={player.playerIndex} />
               <img 
                 src={`/stock_icons/${portraitFilename}`}
                 alt={characterName}
-                class="w-3 h-3 rounded-sm"
+                class="w-4 h-4 rounded-sm"
                 onError={(e) => {
                   // Hide the image if it fails to load
                   (e.target as HTMLImageElement).style.display = 'none';
