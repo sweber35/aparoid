@@ -39,12 +39,15 @@ html, body {
   height: 100%;
   width: 100%;
   overflow: hidden;
+  transition: background-color 0.3s ease;
+  background-color: var(--bg-primary);
 }
 
 body {
-  background-color: var(--bg-primary);
   color: var(--text-primary);
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: color 0.3s ease;
+  margin: 0;
+  padding: 0;
 }
 
 /* CSS Grid Layout */
@@ -62,6 +65,8 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden;
+  background-color: var(--bg-primary);
+  position: relative;
 }
 
 .Viewer {
@@ -69,6 +74,7 @@ body {
   overflow: hidden;
   background-color: var(--bg-primary);
   margin: 1rem;
+  border-radius: 0.5rem;
 }
 
 .Sidebar {
