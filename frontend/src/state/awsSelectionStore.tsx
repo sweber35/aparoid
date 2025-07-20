@@ -193,8 +193,9 @@ function createSelectionStore(stubStore: StubStore) {
                 .map((filter) => filter.label);
 
             // Check stage filter
+            const stageName = stageNameByExternalId[stub.stageId];
             const stagePass = stagesAllowed.length === 0 || 
-                stagesAllowed.includes(stageNameByExternalId[stub.stageId]);
+                (stageName && stagesAllowed.includes(stageName));
 
             // Check name filter
             const areNamesSatisfied = namesNeeded.length === 0 || namesNeeded.every((name) =>
