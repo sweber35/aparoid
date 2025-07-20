@@ -205,7 +205,7 @@ export function Replays(props: { selectionStore: SelectionStore }) {
                   selected={(stub) =>
                     props.selectionStore.data?.selectedFileAndStub?.[1] === stub
                   }
-                  estimateSize={(stub) => 96}
+                  estimateSize={(stub) => 112}
                 />
               </Show>
             </div>
@@ -280,7 +280,7 @@ function GameInfo(props: { replayStub: ReplayStub, loading?: boolean, selected?:
   }
 
   return (
-    <div class={`h-full w-full transition-colors duration-200 ${
+    <div class={`w-full min-h-[96px] pb-4 transition-colors duration-200 ${
       !themeStore.isDark() && 'hover:bg-gray-50'
     } ${
       themeStore.isDark() && 'hover:bg-void-400'
@@ -347,7 +347,7 @@ function GameInfo(props: { replayStub: ReplayStub, loading?: boolean, selected?:
       </div>
       
       {/* Player information */}
-      <div class="space-y-1 px-3 pb-4">
+      <div class="space-y-1 px-3 pb-4 mb-2">
         {players.map((player) => {
           const characterName = characterNameByExternalId[player.characterId] || `Character ${player.characterId}`;
           const portraitFilename = getCharacterPortraitFilename(characterName);

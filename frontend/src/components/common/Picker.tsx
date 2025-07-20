@@ -51,7 +51,7 @@ export function Picker<T>(props: {
       stripe: {
         position: 'absolute' as const,
         left: '-1px',
-        height: isMobile ? '96px' : '96px', // Match the actual content height
+        height: `${props.estimateSize(props.items[0] || props.items[0], 0)}px`, // Use actual estimateSize
         width: '5px',
         'background-color': themeStore.isDark() ? '#00E887' : '#44A963',
         'z-index': '10',
