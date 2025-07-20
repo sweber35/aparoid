@@ -182,7 +182,7 @@ export function Replays(props: { selectionStore: SelectionStore }) {
                 selected={(stub) =>
                   props.selectionStore.data?.selectedFileAndStub?.[1] === stub
                 }
-                estimateSize={(stub) => 144}
+                estimateSize={(stub) => 128}
               />
             </Show>
           </div>
