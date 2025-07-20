@@ -84,7 +84,7 @@ export function Picker<T>(props: {
                             ? {
                                 backgroundColor: '#0B0A1C', // void for all items
                                 color: '#ffffff', // white text for contrast in dark mode
-                                border: 'none', // Remove border in dark mode
+                                border: '1px solid #4A4A4A', // normal border for all sides
                                 backgroundImage: 'none', // Override any inherited backgrounds
                                 background: '#0B0A1C' // Force background override
                               }

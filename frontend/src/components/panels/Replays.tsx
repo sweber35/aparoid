@@ -3,7 +3,7 @@ import { createMemo, createSignal, Show } from "solid-js";
 import { Picker } from "~/components/common/Picker";
 import { StageBadge, PlayerBadge } from "~/components/common/Badge";
 import { ReplayStub, SelectionStore, currentCategory, setCurrentCategory, initCategoryStore } from "~/state/awsSelectionStore";
-import { characterNameByExternalId } from "~/common/ids";
+import { characterNameByExternalId, characterNameByInternalId } from "~/common/ids";
 import { API_CONFIG } from "~/config";
 import { createEffect } from "solid-js";
 import { themeStore } from "~/state/themeStore";
@@ -13,6 +13,15 @@ interface PlayerInfo {
   tag: string;
   characterId: number;
   playerIndex: number;
+}
+
+// Helper function to convert character name to filename
+function getCharacterPortraitFilename(characterName: string): string {
+  return characterName
+    .replace(/\s+/g, '') // Remove spaces
+    .replace(/\./g, '') // Remove periods
+    .replace(/&/g, '&') // Keep ampersand as is
+    + '.png';
 }
 
 const categoryOptions = [
@@ -206,11 +215,13 @@ function GameInfo(props: { replayStub: ReplayStub, loading?: boolean, selected?:
       // Parse the players JSON string into an array of player objects
       const playersArray = JSON.parse(props.replayStub.players) as PlayerInfo[];
       
-      return playersArray.map((player) => ({
-        tag: player.tag,
-        characterId: player.characterId,
-        playerIndex: player.playerIndex + 1 // Convert to 1-based for badges
-      }));
+      return playersArray
+        .map((player) => ({
+          tag: player.tag,
+          characterId: player.characterId,
+          playerIndex: player.playerIndex + 1 // Convert to 1-based for badges
+        }))
+        .sort((a, b) => a.playerIndex - b.playerIndex); // Sort by player index (P1 before P2)
     } catch (error) {
       console.error('Error parsing players:', error);
       return [];
@@ -325,16 +336,29 @@ function GameInfo(props: { replayStub: ReplayStub, loading?: boolean, selected?:
       
       {/* Player information */}
       <div class="space-y-1">
-        <div class="text-xs font-medium text-theme-primary">Players:</div>
-        {players.map((player) => (
-          <div class="flex items-center gap-2 text-xs text-theme-secondary pl-2">
-            <PlayerBadge port={player.playerIndex} />
-            <span class="font-medium">{player.tag}</span>
-            <span class="text-theme-muted">
-              ({characterNameByExternalId[player.characterId] || `Character ${player.characterId}`})
-            </span>
-          </div>
-        ))}
+        {players.map((player) => {
+          const characterName = characterNameByExternalId[player.characterId] || `Character ${player.characterId}`;
+          const portraitFilename = getCharacterPortraitFilename(characterName);
+          
+          return (
+            <div class="flex items-center gap-2 text-sm text-theme-secondary">
+              <PlayerBadge port={player.playerIndex} />
+              <img 
+                src={`/stock_icons/${portraitFilename}`}
+                alt={characterName}
+                class="w-4 h-4 rounded-sm"
+                onError={(e) => {
+                  // Hide the image if it fails to load
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+              <span class="font-medium">{player.tag}</span>
+              <span class="text-theme-muted">
+                ({characterName})
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
