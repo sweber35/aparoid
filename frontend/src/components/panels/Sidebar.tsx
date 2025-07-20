@@ -1,9 +1,10 @@
-import { Replays } from "~/components/panels/Replays";
+import { Replays, Controls } from "~/components/panels/Replays";
 import { currentSelectionStore } from "~/state/awsSelectionStore";
 import { Show, createSignal } from "solid-js";
 import { ReplayData } from "~/common/types";
 import { ReplayStub } from "~/state/awsSelectionStore";
 import { ThemeToggle } from "~/components/common/ThemeToggle";
+import { MobileMenu } from "~/components/common/MobileMenu";
 import { themeStore } from "~/state/themeStore";
 
 export function Sidebar() {
@@ -44,6 +45,56 @@ export function Sidebar() {
 
         // Reset the input
         input.value = '';
+    }
+
+    // Mobile menu content component
+    function MobileMenuContent() {
+        return (
+            <>
+                {/* Theme Toggle Section */}
+                <div class="space-y-2">
+                    <h3 class="text-sm font-medium text-theme-primary">Theme</h3>
+                    <div class="flex items-center justify-between p-3 rounded-lg bg-theme-secondary">
+                        <span class="text-sm text-theme-secondary">Dark Mode</span>
+                        <ThemeToggle />
+                    </div>
+                </div>
+
+                {/* Controls Section */}
+                <div class="space-y-2">
+                    <h3 class="text-sm font-medium text-theme-primary">Controls</h3>
+                    <div class="p-3 rounded-lg bg-theme-secondary">
+                        <Controls selectionStore={currentSelectionStore()!} />
+                    </div>
+                </div>
+
+                {/* Import Section */}
+                <div class="space-y-2">
+                    <h3 class="text-sm font-medium text-theme-primary">Import</h3>
+                    <div class="space-y-2">
+                        <button
+                            onClick={() => setIsImportModalOpen(true)}
+                            class={`w-full px-4 py-2 rounded text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                themeStore.isDark() 
+                                    ? 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus:ring-accent-primary' 
+                                    : 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus:ring-accent-primary'
+                            }`}
+                        >
+                            Import JSON Replay
+                        </button>
+                        
+                        <label class={`w-full px-4 py-2 rounded text-sm font-medium cursor-pointer inline-block text-center transition-colors duration-200 ${
+                            themeStore.isDark() 
+                                ? 'bg-ecto-green-500 hover:bg-ecto-green-600 text-void-600 focus-within:ring-2 focus-within:ring-ecto-green-500 focus-within:ring-offset-2' 
+                                : 'bg-accent-primary hover:bg-ultraviolet-600 text-white focus-within:ring-2 focus-within:ring-accent-primary focus-within:ring-offset-2'
+                        }`}>
+                            Upload .slp files
+                            <input type="file" multiple accept=".slp" class="hidden" />
+                        </label>
+                    </div>
+                </div>
+            </>
+        );
     }
     
     return (
@@ -151,6 +202,11 @@ export function Sidebar() {
                     </div>
                 )}
             </Show>
+
+            {/* Mobile Menu */}
+            <MobileMenu>
+                <MobileMenuContent />
+            </MobileMenu>
 
             {/* Import Modal */}
             <Show when={isImportModalOpen()}>

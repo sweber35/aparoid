@@ -69,6 +69,57 @@ body {
   position: relative;
 }
 
+/* Mobile landscape layout */
+@media (max-width: 1024px) and (orientation: landscape) {
+  .container {
+    grid-template-columns: 0.4fr 1.6fr;
+  }
+  
+  .Sidebar {
+    grid-template-rows: 2fr;
+    grid-template-areas: "Replays";
+  }
+  
+  .Sidebar .ThemeToggle,
+  .Sidebar .ImportButtons {
+    display: none !important;
+  }
+  
+  .Replays {
+    grid-template-rows: 1fr;
+    grid-template-areas: "Picker";
+  }
+  
+  .Replays .ControlsContainer {
+    display: none !important;
+  }
+  
+  /* Mobile landscape picker styling */
+  .Replays .Picker {
+    padding: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Hide bug tagging button on mobile landscape */
+  .Replays .Picker button[title*="bugged"] {
+    display: none !important;
+  }
+  
+  /* Remove padding from viewer on mobile landscape */
+  .Viewer {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  /* Ensure Tailwind classes don't override our mobile layout */
+  .lg\:block {
+    display: none !important;
+  }
+}
+
 .Viewer {
   grid-area: Viewer;
   overflow: hidden;

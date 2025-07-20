@@ -55,22 +55,8 @@ const stageFilterProps = createOptions(
     }
 );
 
-export function Replays(props: { selectionStore: SelectionStore }) {
-    
-    // Create a computed value for the current selected category option
-    const currentCategoryOption = createMemo(() => {
-        const current = currentCategory();
-        return categoryOptions.find(opt => opt.value === current) || categoryOptions[0];
-    });
-    
-    // Sort stubs so bugged stubs are at the bottom
-    const sortedFilteredStubs = createMemo(() => {
-        return [...props.selectionStore?.data.filteredStubs].sort((a, b) => {
-            // undefined bugged treated as false (not bugged)
-            return (a.bugged ? 1 : 0) - (b.bugged ? 1 : 0);
-        });
-    });
-    
+// Controls component that can be used in both desktop and mobile
+function Controls(props: { selectionStore: SelectionStore }) {
     const [loadingCategory, setLoadingCategory] = createSignal(false);
 
     // Handle category change with loading state
@@ -98,79 +84,102 @@ export function Replays(props: { selectionStore: SelectionStore }) {
     }
 
     return (
-        <>
-          <div class="Replays">
-            {/* Controls Container */}
-            <div class="ControlsContainer">
-              {/* Category Selection */}
-              <div class="w-full">
+        <div class="space-y-4">
+            {/* Category Selection */}
+            <div class="w-full">
                 <label class="block text-sm font-medium text-theme-primary mb-1">Tech Skill Category</label>
                 <div class="flex items-center gap-2">
-                  <div class="flex-1 relative">
-                    <Show when={currentCategory()} keyed>
-                      {(category) => {
-                        const currentOption = categoryOptions.find(opt => opt.value === category) || categoryOptions[0];
-                        return (
-                          <>
-                            <Select
-                              class={`w-full rounded ${
-                                themeStore.isDark() 
-                                  ? 'bg-void-500 text-white' 
-                                  : 'bg-theme-primary text-theme-primary border border-white'
-                              }`}
-                              placeholder="Select tech skill category"
-                              {...categoryFilterProps}
-                              initialValue={currentOption}
-                              disabled={loadingCategory()}
-                              onChange={handleCategoryChange}
-                            />
-                          </>
-                        );
-                      }}
-                    </Show>
-                  </div>
-                  <button
-                    class={`ml-2 rounded border disabled:opacity-50 flex items-center justify-center transition-colors duration-200 ${
-                      themeStore.isDark() 
-                        ? 'bg-void-500 hover:bg-void-400 text-white' 
-                        : 'bg-theme-secondary hover:bg-theme-tertiary text-theme-primary border-theme-primary'
-                    }`}
-                    title="Refresh category"
-                    onClick={handleRefreshCategory}
-                    disabled={loadingCategory()}
-                    style={{ height: '38px', width: '38px', padding: 0 }}
-                  >
-                    {loadingCategory() ? (
-                      <span class="animate-spin inline-block w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full"></span>
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 19.5A9 9 0 1112 21v-3m0 0l-2.25 2.25M12 18v3" />
-                      </svg>
-                    )}
-                  </button>
+                    <div class="flex-1 relative">
+                        <Show when={currentCategory()} keyed>
+                            {(category) => {
+                                const currentOption = categoryOptions.find(opt => opt.value === category) || categoryOptions[0];
+                                return (
+                                    <>
+                                        <Select
+                                            class={`w-full rounded ${
+                                                themeStore.isDark() 
+                                                    ? 'bg-void-500 text-white' 
+                                                    : 'bg-theme-primary text-theme-primary border border-white'
+                                            }`}
+                                            placeholder="Select tech skill category"
+                                            {...categoryFilterProps}
+                                            initialValue={currentOption}
+                                            disabled={loadingCategory()}
+                                            onChange={handleCategoryChange}
+                                        />
+                                    </>
+                                );
+                            }}
+                        </Show>
+                    </div>
+                    <button
+                        class={`ml-2 rounded border disabled:opacity-50 flex items-center justify-center transition-colors duration-200 ${
+                            themeStore.isDark() 
+                                ? 'bg-void-500 hover:bg-void-400 text-white' 
+                                : 'bg-theme-secondary hover:bg-theme-tertiary text-theme-primary border-theme-primary'
+                        }`}
+                        title="Refresh category"
+                        onClick={handleRefreshCategory}
+                        disabled={loadingCategory()}
+                        style={{ height: '38px', width: '38px', padding: 0 }}
+                    >
+                        {loadingCategory() ? (
+                            <span class="animate-spin inline-block w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full"></span>
+                        ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 19.5A9 9 0 1112 21v-3m0 0l-2.25 2.25M12 18v3" />
+                            </svg>
+                        )}
+                    </button>
                 </div>
-              </div>
+            </div>
 
-              {/* Stage/Player Filtering */}
-              <div
+            {/* Stage/Player Filtering */}
+            <div
                 class="w-full"
                 // don't trigger global shortcuts when typing in the filter box
                 onkeydown={(e: Event) => e.stopPropagation()}
                 onkeyup={(e: Event) => e.stopPropagation()}
-              >
+            >
                 <label class="block text-sm font-medium text-theme-primary mb-1">Filter by Stage or Player</label>
                 <Select
-                  class={`w-full rounded ${
-                    themeStore.isDark() 
-                      ? 'bg-void-500 text-white' 
-                      : 'bg-theme-primary text-theme-primary border border-white'
-                  }`}
-                  placeholder="Filter by stage or player"
-                  multiple
-                  {...stageFilterProps}
-                  onChange={props.selectionStore.setFilters}
+                    class={`w-full rounded ${
+                        themeStore.isDark() 
+                            ? 'bg-void-500 text-white' 
+                            : 'bg-theme-primary text-theme-primary border border-white'
+                    }`}
+                    placeholder="Filter by stage or player name"
+                    multiple
+                    {...stageFilterProps}
+                    onChange={props.selectionStore.setFilters}
                 />
-              </div>
+            </div>
+        </div>
+    );
+}
+
+export function Replays(props: { selectionStore: SelectionStore }) {
+    
+    // Create a computed value for the current selected category option
+    const currentCategoryOption = createMemo(() => {
+        const current = currentCategory();
+        return categoryOptions.find(opt => opt.value === current) || categoryOptions[0];
+    });
+    
+    // Sort stubs so bugged stubs are at the bottom
+    const sortedFilteredStubs = createMemo(() => {
+        return [...props.selectionStore?.data.filteredStubs].sort((a, b) => {
+            // undefined bugged treated as false (not bugged)
+            return (a.bugged ? 1 : 0) - (b.bugged ? 1 : 0);
+        });
+    });
+
+    return (
+        <>
+          <div class="Replays">
+            {/* Controls Container - hidden on mobile landscape */}
+            <div class="ControlsContainer">
+                <Controls selectionStore={props.selectionStore} />
             </div>
 
             {/* Picker */}
@@ -180,6 +189,7 @@ export function Replays(props: { selectionStore: SelectionStore }) {
                 fallback={<div class="text-theme-secondary">No matching results</div>}
               >
                 <Picker
+                  variant="mobile"
                   items={sortedFilteredStubs()}
                   render={(stub) => (
                     <GameInfo
@@ -196,7 +206,7 @@ export function Replays(props: { selectionStore: SelectionStore }) {
                   selected={(stub) =>
                     props.selectionStore.data?.selectedFileAndStub?.[1] === stub
                   }
-                  estimateSize={(stub) => 128}
+                  estimateSize={(stub) => 96}
                 />
               </Show>
             </div>
@@ -204,6 +214,9 @@ export function Replays(props: { selectionStore: SelectionStore }) {
         </>
     );
 }
+
+// Export Controls for use in mobile menu
+export { Controls };
 
 function GameInfo(props: { replayStub: ReplayStub, loading?: boolean, selected?: boolean }) {
   const [bugged, setBugged] = createSignal(props.replayStub.bugged ?? false);
@@ -268,7 +281,7 @@ function GameInfo(props: { replayStub: ReplayStub, loading?: boolean, selected?:
   }
 
   return (
-    <div class={`h-32 px-3 py-2 transition-colors duration-200 ${
+    <div class={`h-24 px-2 py-1 transition-colors duration-200 ${
       !themeStore.isDark() && 'hover:bg-gray-50'
     } ${
       themeStore.isDark() && 'hover:bg-void-400'
@@ -276,17 +289,17 @@ function GameInfo(props: { replayStub: ReplayStub, loading?: boolean, selected?:
       bugged() && !themeStore.isDark() ? 'bg-yellow-100' : ''
     }`} style={themeStore.isDark() ? { 'background-image': 'none' } : {}}>
       {/* Header with stage and date */}
-      <div class="flex items-center justify-between mb-2">
-        <div class="flex items-center gap-2">
+      <div class="flex items-center justify-between mb-1">
+        <div class="flex items-center gap-1">
           <StageBadge stageId={props.replayStub.stageId} />
-          <div class="text-sm text-theme-secondary">
+          <div class="text-xs text-theme-secondary">
             {new Date(props.replayStub.matchId).toLocaleDateString()}
           </div>
         </div>
         <div class="flex items-center gap-2">
           <Show when={replayStore.isDebug}>
             <div class="text-xs text-theme-muted">
-              Frames {props.replayStub.frameStart}-{props.replayStub.frameEnd}
+              {props.replayStub.frameStart}-{props.replayStub.frameEnd}
             </div>
           </Show>
                     {/* Bugged toggle button or loading spinner */}
@@ -335,27 +348,24 @@ function GameInfo(props: { replayStub: ReplayStub, loading?: boolean, selected?:
       </div>
       
       {/* Player information */}
-      <div class="space-y-1">
+      <div class="space-y-0.5">
         {players.map((player) => {
           const characterName = characterNameByExternalId[player.characterId] || `Character ${player.characterId}`;
           const portraitFilename = getCharacterPortraitFilename(characterName);
           
           return (
-            <div class="flex items-center gap-2 text-sm text-theme-secondary">
+            <div class="flex items-center gap-1 text-xs text-theme-secondary">
               <PlayerBadge port={player.playerIndex} />
               <img 
                 src={`/stock_icons/${portraitFilename}`}
                 alt={characterName}
-                class="w-4 h-4 rounded-sm"
+                class="w-3 h-3 rounded-sm"
                 onError={(e) => {
                   // Hide the image if it fails to load
                   (e.target as HTMLImageElement).style.display = 'none';
                 }}
               />
-              <span class="font-medium">{player.tag}</span>
-              <span class="text-theme-muted">
-                ({characterName})
-              </span>
+              <span class="font-medium truncate">{player.tag}</span>
             </div>
           );
         })}
