@@ -4,7 +4,7 @@ export type Theme = "light" | "dark";
 
 // Create the theme signal with persistence
 const [theme, setTheme] = createSignal<Theme>(
-  (localStorage.getItem("theme") as Theme) || "light"
+  (localStorage.getItem("theme") as Theme) || "dark"
 );
 
 // Apply theme to document when it changes

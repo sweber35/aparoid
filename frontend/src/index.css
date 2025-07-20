@@ -72,7 +72,7 @@ body {
 /* Mobile landscape layout */
 @media (max-width: 1024px) and (orientation: landscape) {
   .container {
-    grid-template-columns: 0.4fr 1.6fr;
+    grid-template-columns: 0.5fr 1.5fr;
   }
   
   .Sidebar {
