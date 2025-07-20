@@ -134,7 +134,7 @@ export function Picker<T>(props: {
                         ? '#ffffff' 
                         : 'transparent',
                     color: themeStore.isDark() ? '#ffffff' : 'inherit',
-                    'border-bottom': themeStore.isDark() 
+                    'border': themeStore.isDark() 
                       ? '1px solid #2A2A2A'
                       : '1px solid #e5e7eb',
                     'background-image': 'none',
