@@ -160,6 +160,12 @@ function Controls(props: { selectionStore: SelectionStore }) {
 
 export function Replays(props: { selectionStore: SelectionStore }) {
     
+    // Detect mobile landscape mode
+    const isMobileLandscape = createMemo(() => {
+        if (typeof window === 'undefined') return false;
+        return window.innerWidth > window.innerHeight && window.innerWidth < 1024;
+    });
+    
     // Create a computed value for the current selected category option
     const currentCategoryOption = createMemo(() => {
         const current = currentCategory();
@@ -205,7 +211,7 @@ export function Replays(props: { selectionStore: SelectionStore }) {
                   selected={(stub) =>
                     props.selectionStore.data?.selectedFileAndStub?.[1] === stub
                   }
-                  estimateSize={(stub) => 112}
+                  estimateSize={(stub) => isMobileLandscape() ? 116 : 138}
                 />
               </Show>
             </div>
