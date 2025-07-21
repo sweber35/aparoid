@@ -45,7 +45,7 @@ function Base(props: { onClose?: () => void; children: JSX.Element }) {
           >
             <div
               {...api().contentProps}
-              class="w-full max-w-xl rounded-md border border-slate-300 bg-white p-8"
+              class="w-full max-w-xl rounded-md border border-theme-primary bg-theme-primary p-8"
             >
               <div {...api().titleProps} class="w-full">
                 <Show when={parts.title}>{parts.title}</Show>

@@ -128,12 +128,12 @@ export function Controls() {
   let seekbarInput!: HTMLInputElement;
 
   return (
-    <div class="flex flex-wrap items-center justify-evenly gap-4 rounded-b border border-t-0 py-1 px-2 text-slate-800">
+    <div class="flex flex-wrap items-center justify-evenly gap-4 rounded-b border border-t-0 border-theme-primary py-1 px-2 bg-theme-secondary text-theme-primary">
       <Show
         when={replayStore.running}
         fallback={
           <div
-            class="material-icons cursor-pointer text-[32px] leading-none"
+            class="material-icons cursor-pointer text-[32px] leading-none text-theme-primary hover:text-accent-primary transition-colors duration-200"
             onClick={() => togglePause()}
             aria-label="Resume playback"
           >
@@ -142,7 +142,7 @@ export function Controls() {
         }
       >
         <div
-          class="material-icons cursor-pointer text-[32px]"
+          class="material-icons cursor-pointer text-[32px] text-theme-primary hover:text-accent-primary transition-colors duration-200"
           onClick={() => togglePause()}
           aria-label="pause playback"
         >
@@ -151,7 +151,7 @@ export function Controls() {
       </Show>
       <div class="flex items-center gap-1">
         <div
-          class="material-icons cursor-pointer text-[32px]"
+          class="material-icons cursor-pointer text-[32px] text-theme-primary hover:text-accent-primary transition-colors duration-200"
           onClick={() => adjust(-120)}
           aria-label="Rewind 2 seconds"
         >
@@ -168,10 +168,10 @@ export function Controls() {
         >
           -
         </MinusIcon>
-        <label for="seekbar" class="font-mono text-sm">
+        <label for="seekbar" class="font-mono text-sm text-theme-primary">
           {replayStore.frame}
           {getFullReplayDebugState() && (
-            <span class="ml-2 text-xs text-orange-600 bg-orange-100 px-1 rounded" title="Full replay debug mode active">
+            <span class="ml-2 text-xs text-ecto-green-800 bg-ecto-green-100 dark:text-ecto-green-100 dark:bg-ecto-green-800 px-1 rounded" title="Full replay debug mode active">
               FULL
             </span>
           )}
@@ -188,7 +188,7 @@ export function Controls() {
           +
         </PlusIcon>
         <div
-          class="material-icons cursor-pointer text-[32px]"
+          class="material-icons cursor-pointer text-[32px] text-theme-primary hover:text-accent-primary transition-colors duration-200"
           onClick={() => adjust(120)}
           aria-label="Skip ahead 2 seconds"
         >
@@ -205,7 +205,7 @@ export function Controls() {
         onInput={() => jump(seekbarInput.valueAsNumber)}
       />
       <div
-        class="material-icons cursor-pointer text-[32px]"
+        class="material-icons cursor-pointer text-[32px] text-theme-primary hover:text-accent-primary transition-colors duration-200"
         onClick={() => toggleFullscreen()}
         aria-label="Toggle fullscreen mode"
       >

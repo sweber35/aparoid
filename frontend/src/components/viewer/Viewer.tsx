@@ -12,9 +12,9 @@ export function Viewer() {
     () => replayStore.replayData?.frames[replayStore.frame].items ?? []
   );
   return (
-    <div class="flex flex-col overflow-y-auto pb-4">
+    <div class="h-full w-full flex flex-col">
       <Show when={replayStore.replayData}>
-        <svg class="rounded-t border bg-slate-50" viewBox="-365 -300 730 600">
+        <svg class="flex-1 rounded-t border border-theme-primary bg-theme-secondary" viewBox="-365 -300 730 600">
           {/* up = positive y axis */}
           <g class="-scale-y-100">
             <Camera>

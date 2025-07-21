@@ -40,6 +40,27 @@ export async function loadStubsForActionSequence(actionSequence: {action: Action
 
     const payload = await res.json();
 
+    // Start a background request to get fresh results after a short delay
+    setTimeout(async () => {
+        try {
+            const freshRes = await fetch(API_CONFIG.replayStub, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ actions: actionSequence }),
+            });
+
+            const freshPayload = await freshRes.json();
+            
+            // Update the store with fresh results if they're different
+            const category = currentCategory();
+            if (categoryStores[category]) {
+                categoryStores[category].setSelectionState("stubs", freshPayload);
+            }
+        } catch (error) {
+            console.error('Background refresh failed:', error);
+        }
+    }, 2000); // Wait 2 seconds before making the background request
+
     return payload;
 }
 
@@ -54,6 +75,7 @@ export interface SelectionState {
     stubs: ReplayStub[];
     filteredStubs: ReplayStub[];
     selectedFileAndStub?: [ReplayData, ReplayStub];
+    loadingStubKey?: string | null;
 }
 
 export interface ReplayStub {
@@ -99,22 +121,33 @@ function createSelectionStore(stubStore: StubStore) {
 
     async function select(stub: ReplayStub) {
         console.log('Replay selection changed to match ID:', stub.matchId);
-        const data = await stubStore.getReplayData(stub);
-        setSelectionState("selectedFileAndStub", [data, stub]);
+        const loadingKey = `${stub.matchId}-${stub.frameStart}-${stub.frameEnd}`;
+        setSelectionState("loadingStubKey", loadingKey);
+        try {
+            const data = await stubStore.getReplayData(stub);
+            setSelectionState("selectedFileAndStub", [data, stub]);
+        } finally {
+            setSelectionState("loadingStubKey", null);
+        }
     }
 
     function nextFile() {
         const currentStub = selectionState.selectedFileAndStub?.[1];
         if (!currentStub) return;
         
-        const currentIndex = selectionState.filteredStubs.findIndex(
+        // Sort stubs so bugged stubs are at the bottom (same as Replays component)
+        const sortedStubs = [...selectionState.filteredStubs].sort((a, b) => {
+            return (a.bugged ? 1 : 0) - (b.bugged ? 1 : 0);
+        });
+        
+        const currentIndex = sortedStubs.findIndex(
             stub => stub.matchId === currentStub.matchId && 
                    stub.frameStart === currentStub.frameStart && 
                    stub.frameEnd === currentStub.frameEnd
         );
         
-        if (currentIndex >= 0 && currentIndex < selectionState.filteredStubs.length - 1) {
-            const nextStub = selectionState.filteredStubs[currentIndex + 1];
+        if (currentIndex >= 0 && currentIndex < sortedStubs.length - 1) {
+            const nextStub = sortedStubs[currentIndex + 1];
             select(nextStub);
         }
     }
@@ -123,14 +156,19 @@ function createSelectionStore(stubStore: StubStore) {
         const currentStub = selectionState.selectedFileAndStub?.[1];
         if (!currentStub) return;
         
-        const currentIndex = selectionState.filteredStubs.findIndex(
+        // Sort stubs so bugged stubs are at the bottom (same as Replays component)
+        const sortedStubs = [...selectionState.filteredStubs].sort((a, b) => {
+            return (a.bugged ? 1 : 0) - (b.bugged ? 1 : 0);
+        });
+        
+        const currentIndex = sortedStubs.findIndex(
             stub => stub.matchId === currentStub.matchId && 
                    stub.frameStart === currentStub.frameStart && 
                    stub.frameEnd === currentStub.frameEnd
         );
         
         if (currentIndex > 0) {
-            const prevStub = selectionState.filteredStubs[currentIndex - 1];
+            const prevStub = sortedStubs[currentIndex - 1];
             select(prevStub);
         }
     }
@@ -155,8 +193,9 @@ function createSelectionStore(stubStore: StubStore) {
                 .map((filter) => filter.label);
 
             // Check stage filter
+            const stageName = stageNameByExternalId[stub.stageId];
             const stagePass = stagesAllowed.length === 0 || 
-                stagesAllowed.includes(stageNameByExternalId[stub.stageId]);
+                (stageName && stagesAllowed.includes(stageName));
 
             // Check name filter
             const areNamesSatisfied = namesNeeded.length === 0 || namesNeeded.every((name) =>

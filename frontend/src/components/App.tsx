@@ -13,6 +13,7 @@ import { replayStore } from "~/state/awsStore";
 import { fetchAnimations } from "~/viewer/animationCache";
 import "~/state/fileStore";
 import "~/state/awsStore";
+import "~/state/themeStore"; // Initialize theme system
 import { setSidebar } from "~/state/navigationStore";
 
 export function App() {
@@ -52,22 +53,21 @@ export function App() {
       <Show
         when={!replayStore.isFullscreen}
         fallback={
-          <div class="flex h-screen flex-col justify-between overflow-y-auto">
+          <div class="flex h-screen h-[100dvh] flex-col justify-between overflow-y-auto">
             <Viewer />
             <DebugPanel />
           </div>
         }
       >
         <div
-          class="flex h-full flex-col-reverse gap-4 lg:h-screen lg:flex-row"
+          class="container"
           ref={dropzoneRef}
         >
-          {/*<Navigation />*/}
-          <Sidebar />
-        <div class="flex max-h-screen flex-grow flex-col gap-2 pt-2 pr-4 pl-4 lg:pl-0">
+          <div class="Viewer">
             <Viewer />
             <DebugPanel />
-        </div>
+          </div>
+          <Sidebar />
         </div>
       </Show>
     </>

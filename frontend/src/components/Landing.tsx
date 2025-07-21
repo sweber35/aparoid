@@ -1,27 +1,33 @@
 import { OpenMenu } from "~/components/common/OpenMenu";
 import colors from "tailwindcss/colors";
 import { GitHubIcon, SlippiLab, TwitterIcon } from "~/components/common/icons";
+import { themeStore } from "~/state/themeStore";
 
 export function Landing() {
   return (
     <div
-      class="box-border grid h-screen grid-cols-[0_auto_0] grid-rows-[0_auto_min-content] bg-[length:30px_30px] p-4 md:grid-cols-3 md:grid-rows-[1fr_auto_1fr]"
+      class="box-border grid h-screen grid-cols-[0_auto_0] grid-rows-[0_auto_min-content] bg-theme-primary bg-[length:30px_30px] p-4 md:grid-cols-3 md:grid-rows-[1fr_auto_1fr]"
       style={{
         "grid-template-areas": `
           ".      .      ."
           "falco  logo   fox"
           "footer footer footer"
         `,
-        "background-image": `
-          linear-gradient(lightblue 1px, transparent 1px),
-          linear-gradient(90deg, lightblue 1px, transparent 1px)
-        `,
+        "background-image": themeStore.isDark() 
+          ? `
+            linear-gradient(rgba(96, 0, 255, 0.3) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(96, 0, 255, 0.3) 1px, transparent 1px)
+          `
+          : `
+            linear-gradient(lightblue 1px, transparent 1px),
+            linear-gradient(90deg, lightblue 1px, transparent 1px)
+          `,
       }}
     >
       <div class="hidden md:block" style={{ "grid-area": "falco" }}>
         <svg class="aspect-square" viewBox="-14 -20 30 19">
           <radialGradient id="fill-red" r="1">
-            <stop stop-color={colors.red["700"]}>
+            <stop stop-color={themeStore.isDark() ? "#D000FF" : colors.red["700"]}>
               <animate
                 dur="0.5s"
                 begin="1.35s"
@@ -44,7 +50,9 @@ export function Landing() {
           </radialGradient>
           <path
             transform="scale(-.1 .1) translate(-500 -500)"
-            class="flex-grow animate-draw stroke-red-800 stroke-[3]"
+            class={`flex-grow animate-draw stroke-[3] ${
+              themeStore.isDark() ? "stroke-venom-magenta-400" : "stroke-red-800"
+            }`}
             stroke-dasharray="1000"
             stroke-dashoffset="1000"
             fill="url(#fill-red)"

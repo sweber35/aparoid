@@ -21,6 +21,35 @@ const { generateSequenceQuery } = require('./util.js');
 const dynamo = new DynamoDBClient({ region: process.env.REGION });
 const athena = new AthenaClient({ region: process.env.REGION });
 const s3 = new S3Client({ region: process.env.REGION });
+const CACHE_BUCKET = process.env.CACHE_BUCKET || 'aparoid-replay-cache';
+
+function getStubCacheKey(actions, matchId) {
+    const actionsHash = JSON.stringify(actions).replace(/[^a-zA-Z0-9]/g, '');
+    return `stubs/${actionsHash}-${matchId || 'all'}.json`;
+}
+
+async function tryGetCachedStubs(key) {
+    try {
+        const obj = await s3.send(new GetObjectCommand({
+            Bucket: CACHE_BUCKET,
+            Key: key
+        }));
+        const body = await obj.Body.transformToString();
+        return JSON.parse(body);
+    } catch (err) {
+        if (err.name !== 'NoSuchKey') console.error('Cache miss error:', err);
+        return null;
+    }
+}
+
+async function cacheStubsJson(key, payload) {
+    await s3.send(new PutObjectCommand({
+        Bucket: CACHE_BUCKET,
+        Key: key,
+        Body: JSON.stringify(payload),
+        ContentType: 'application/json'
+    }));
+}
 
 async function getBuggedTag(matchId, frameStart, frameEnd) {
     const key = {
@@ -101,87 +130,76 @@ exports.handler = async (event) => {
       const { actions, matchId } = JSON.parse(event.body);
       console.log('actions:', actions);
 
-      let results;
+      // Check cache first
+      const cacheKey = getStubCacheKey(actions, matchId);
+      const cachedResults = await tryGetCachedStubs(cacheKey);
+      
+      if (cachedResults) {
+          console.log('Returning cached results, starting background refresh');
+          
+          // Start background refresh of cached results
+          (async () => {
+              try {
+                  console.log('Starting background query execution for cache refresh');
+                  const query = generateSequenceQuery(actions, 120);
+                  const results = await runAthenaQuery(query);
+                  
+                  const enrichedResults = await Promise.all(
+                      results.map(async (r) => {
+                          const bugged = await getBuggedTag(r.matchId, r.frameStart, r.frameEnd);
+                          return { ...r, bugged };
+                      })
+                  );
 
+                  console.log('Background query completed, updating cache');
+                  await cacheStubsJson(cacheKey, enrichedResults);
+                  console.log('Cache updated successfully');
+              } catch (error) {
+                  console.error('Background query failed:', error);
+              }
+          })();
+
+          return {
+              statusCode: 200,
+              body: JSON.stringify(cachedResults),
+              headers: {
+                  'Access-Control-Allow-Origin': '*',
+                  'Access-Control-Allow-Headers': 'Content-Type',
+                  'Access-Control-Allow-Methods': 'OPTIONS,POST,GET',
+              }
+          };
+      }
+
+      // If no cache, run the query and wait for results
+      console.log('No cache found, running fresh query');
+      
       const query = generateSequenceQuery(actions, 120);
       console.log('query:', query);
-
-    //   const ledgedashStubsQuery = `
-    //     SELECT
-    //     lds.match_id AS matchId,
-    //     CASE 
-    //         WHEN lds.sequence_start - 120 < 0 THEN 0
-    //         ELSE lds.sequence_start - 120
-    //     END AS frameStart,
-    //     lds.sequence_end + 120 AS frameEnd,
-    //     ms.stage AS stageId,
-    //     ARRAY_AGG(
-    //         ROW(ps.player_tag, ps.ext_char)
-    //     ) AS players
-    //     FROM ledge_dash_summary lds
-    //     JOIN match_settings ms
-    //     ON lds.match_id = ms.match_id
-    //     JOIN player_settings ps
-    //     ON lds.match_id = ps.match_id
-    //     GROUP BY
-    //     lds.match_id,
-    //     ms.stage,
-    //     CASE 
-    //         WHEN lds.sequence_start - 120 < 0 THEN 0
-    //         ELSE lds.sequence_start - 120
-    //     END,
-    //     lds.sequence_end + 120
-    //     ${matchId ? `WHERE matchId = ${matchId}` : ''}
-    //   `;
-
-    // const shineGrabStubsQuery = `
-    //     SELECT
-    //     sgs.match_id AS matchId,
-    //     CASE 
-    //         WHEN sgs.sequence_start - 120 < 0 THEN 0
-    //         ELSE sgs.sequence_start - 120
-    //     END AS frameStart,
-    //     sgs.sequence_end + 120 AS frameEnd,
-    //     ms.stage AS stageId,
-    //     ARRAY_AGG(
-    //         ROW(ps.player_tag, ps.ext_char)
-    //     ) AS players
-    //     FROM shine_grabs sgs
-    //     JOIN match_settings ms
-    //     ON sgs.match_id = ms.match_id
-    //     JOIN player_settings ps
-    //     ON sgs.match_id = ps.match_id
-    //     GROUP BY
-    //     sgs.match_id,
-    //     ms.stage,
-    //     CASE 
-    //         WHEN sgs.sequence_start - 120 < 0 THEN 0
-    //         ELSE sgs.sequence_start - 120
-    //     END,
-    //     sgs.sequence_end + 120
-    //     ${matchId ? `WHERE matchId = ${matchId}` : ''}
-    // `;
-
-      results = await runAthenaQuery(query);
-
+      
+      // Run the query and wait for results
+      const results = await runAthenaQuery(query);
+      
       const enrichedResults = await Promise.all(
-        results.map(async (r) => {
-          const bugged = await getBuggedTag(r.matchId, r.frameStart, r.frameEnd);
-          return { ...r, bugged };
-        })
+          results.map(async (r) => {
+              const bugged = await getBuggedTag(r.matchId, r.frameStart, r.frameEnd);
+              return { ...r, bugged };
+          })
       );
 
-      console.log(enrichedResults);
+      // Cache the results for future requests
+      console.log('Query completed, caching results');
+      await cacheStubsJson(cacheKey, enrichedResults);
+      console.log('Results cached successfully');
 
       return {
-        statusCode: 200,
-        body: JSON.stringify(enrichedResults),
-        headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'Content-Type',
-            'Access-Control-Allow-Methods': 'OPTIONS,POST,GET',
-        }
-    };
+          statusCode: 200,
+          body: JSON.stringify(enrichedResults),
+          headers: {
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Headers': 'Content-Type',
+              'Access-Control-Allow-Methods': 'OPTIONS,POST,GET',
+          }
+      };
 
   } catch (error) {
     console.error('Error:', error);

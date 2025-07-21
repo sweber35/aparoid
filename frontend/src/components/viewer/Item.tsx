@@ -2,6 +2,7 @@ import { createMemo, For, Match, Switch } from "solid-js";
 import { itemNamesById } from "~/common/ids";
 import { ItemUpdate, PlayerUpdate } from "~/common/types";
 import { replayStore } from "~/state/awsStore";
+import { themeStore } from "~/state/themeStore";
 
 // TODO: characters projectiles
 
@@ -82,7 +83,7 @@ function SamusChargeshot(props: { item: ItemUpdate }) {
         cx={props.item.xPosition}
         cy={props.item.yPosition}
         r={hitboxesByChargeLevel[props.item.chargeShotChargeLevel] / 256}
-        fill="darkgray"
+        fill={themeStore.isDark() ? "#4A4A4A" : "darkgray"} // charred-graphite in dark mode
       />
     </>
   );
@@ -201,10 +202,11 @@ function Needle(props: { item: ItemUpdate }) {
 }
 
 function FoxLaser(props: { item: ItemUpdate }) {
-  // There is a 4th hitbox for the first frame only at -3600 (hitboxspace) with
-  // size 400 / 256 that I am skipping.
-  const hitboxOffsets = [-200, -933, -1666].map((x) => x / 256);
+  const hitboxOffsets = [-200, -933, -1666, -2400].map((x) => x / 256);
   const hitboxSize = 300 / 256;
+  
+  const laserColor = () => themeStore.isDark() ? "#D000FF" : "red"; // venom-magenta in dark mode
+  
   // Throws and deflected lasers are not straight horizontal
   const rotations = createMemo(() => {
     const direction = Math.atan2(props.item.yVelocity, props.item.xVelocity);
@@ -213,14 +215,8 @@ function FoxLaser(props: { item: ItemUpdate }) {
   return (
     <>
       <line
-        x1={
-          props.item.xPosition +
-          hitboxOffsets[0] * props.item.facingDirection * rotations()[0]
-        }
-        y1={
-          props.item.yPosition +
-          hitboxOffsets[0] * props.item.facingDirection * rotations()[1]
-        }
+        x1={props.item.xPosition + hitboxOffsets[0] * rotations()[0]}
+        y1={props.item.yPosition + hitboxOffsets[0] * rotations()[1]}
         x2={
           props.item.xPosition +
           hitboxOffsets[hitboxOffsets.length - 1] *
@@ -233,7 +229,7 @@ function FoxLaser(props: { item: ItemUpdate }) {
             props.item.facingDirection *
             rotations()[1]
         }
-        stroke="red"
+        stroke={laserColor()}
       />
       <For each={hitboxOffsets}>
         {(hitboxOffset) => (
@@ -247,7 +243,7 @@ function FoxLaser(props: { item: ItemUpdate }) {
               hitboxOffset * props.item.facingDirection * rotations()[1]
             }
             r={hitboxSize}
-            fill="red"
+            fill={laserColor()}
           />
         )}
       </For>
@@ -258,6 +254,9 @@ function FoxLaser(props: { item: ItemUpdate }) {
 function FalcoLaser(props: { item: ItemUpdate }) {
   const hitboxOffsets = [-200, -933, -1666, -2400].map((x) => x / 256);
   const hitboxSize = 300 / 256;
+  
+  const laserColor = () => themeStore.isDark() ? "#D000FF" : "red"; // venom-magenta in dark mode
+  
   // Throws and deflected lasers are not straight horizontal
   const rotations = createMemo(() => {
     const direction = Math.atan2(props.item.yVelocity, props.item.xVelocity);
@@ -276,7 +275,7 @@ function FalcoLaser(props: { item: ItemUpdate }) {
           props.item.yPosition +
           hitboxOffsets[hitboxOffsets.length - 1] * rotations()[1]
         }
-        stroke="red"
+        stroke={laserColor()}
       />
       <For each={hitboxOffsets}>
         {(hitboxOffset) => (
@@ -284,7 +283,7 @@ function FalcoLaser(props: { item: ItemUpdate }) {
             cx={ props.item.xPosition + hitboxOffset * rotations()[0]}
             cy={ props.item.yPosition + hitboxOffset * rotations()[1]}
             r={hitboxSize}
-            fill="red"
+            fill={laserColor()}
           />
         )}
       </For>

@@ -16,6 +16,7 @@ import { Character } from "~/viewer/characters/character";
 import { getPlayerOnFrame, getStartOfAction } from "~/viewer/viewerUtil";
 import { actionMapByInternalId } from "~/viewer/characters";
 import colors from "tailwindcss/colors";
+import { themeStore } from "~/state/themeStore";
 import {Highlight} from "~/search/search";
 
 interface RenderData {
@@ -313,8 +314,8 @@ export function computeRenderData(
                 connectCode: ""
             },
             path: "",
-            innerColor: "blue",
-            outerColor: "black",
+            innerColor: themeStore.isDark() ? "#6000FF" : "blue", // ultraviolet in dark mode
+            outerColor: themeStore.isDark() ? "#4A4A4A" : "black", // charred-graphite in dark mode
             transforms: [`translate(${playerState.xPosition} ${playerState.yPosition})`],
             animationName: "Wait",
             characterData: { scale: 1, shieldOffset: [0, 0], shieldSize: 10, animationMap: new Map(), specialsMap: new Map() }
@@ -387,10 +388,10 @@ export function computeRenderData(
       ),
       outerColor:
         startOfActionPlayerState.lCancelStatus === "missed"
-          ? "red"
+          ? (themeStore.isDark() ? "#D000FF" : "red") // venom-magenta in dark mode
           : playerState.hurtboxCollisionState !== "vulnerable"
-          ? "blue"
-          : "black",
+          ? (themeStore.isDark() ? "#B7C0EE" : "blue") // ultraviolet in dark mode
+          : (themeStore.isDark() ? "#4A4A4A" : "black"), // charred-graphite in dark mode
       transforms: [
         `translate(${playerState.xPosition} ${playerState.yPosition})`,
         // TODO: rotate around true character center instead of current guessed
@@ -501,6 +502,26 @@ export function computeRenderData(
     playerIndex: number,
     isNana: boolean
   ): string {
+    // Use high-contrast dark theme colors when in dark mode
+    if (themeStore.isDark()) {
+      if (replayState.replayData!.settings.isTeams) {
+        const settings =
+          replayState.replayData!.settings.playerSettings[playerIndex];
+        return [
+          ["#D000FF", "#BB00E5"], // venom-magenta for red team
+          ["#00E887", "#00D179"], // ecto-green for green team  
+          ["#6000FF", "#5500E5"], // ultraviolet for blue team
+        ][settings.teamId][isNana ? 1 : settings.teamShade];
+      }
+      return [
+        ["#00E887", "#00D179"], // Player 1: ecto-green
+        ["#D000FF", "#BB00E5"], // Player 2: venom-magenta
+        ["#6000FF", "#5500E5"], // Player 3: ultraviolet
+        ["#4A4A4A", "#424242"], // Player 4: charred-graphite
+      ][playerIndex][isNana ? 1 : 0];
+    }
+
+    // Original light mode colors
     if (replayState.replayData!.settings.isTeams) {
       const settings =
         replayState.replayData!.settings.playerSettings[playerIndex];

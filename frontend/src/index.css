@@ -1,3 +1,335 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Theme CSS Custom Properties */
+:root {
+  /* Light theme (default) */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #e2e8f0;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --border-primary: #e2e8f0;
+  --border-secondary: #cbd5e1;
+  --accent-primary: #44A963; /* slippi-500 */
+  --accent-secondary: #59BC78; /* slippi-400 */
+}
+
+/* Dark theme using the new palette */
+.dark {
+  --bg-primary: #1A1A2E; /* lighter void */
+  --bg-secondary: #0B0A1C; /* void */
+  --bg-tertiary: #2d2a45; /* charred-graphite with void tint */
+  --text-primary: #ffffff;
+  --text-secondary: #e2e8f0;
+  --text-muted: #94a3b8;
+  --border-primary: #4A4A4A; /* charred-graphite */
+  --border-secondary: #6b7280;
+  --accent-primary: #6000FF; /* ultraviolet */
+  --accent-secondary: #D000FF; /* venom-magenta */
+  --success-color: #00E887; /* ecto-green */
+}
+
+/* Base styles that respond to theme */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  height: 100dvh; /* Dynamic viewport height for mobile */
+  width: 100%;
+  overflow: hidden;
+  transition: background-color 0.3s ease;
+  background-color: var(--bg-primary);
+}
+
+body {
+  color: var(--text-primary);
+  transition: color 0.3s ease;
+  margin: 0;
+  padding: 0;
+}
+
+/* CSS Grid Layout */
+.container {
+  display: grid;
+  grid-template-columns: 0.4fr 1.6fr;
+  grid-template-rows: 3.5fr;
+  gap: 0px 0px;
+  grid-auto-flow: row;
+  grid-template-areas:
+    "Sidebar Viewer";
+  height: 100vh;
+  height: 100dvh; /* Dynamic viewport height for mobile */
+  width: 100vw;
+  max-width: 100vw;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: var(--bg-primary);
+  position: relative;
+}
+
+/* Mobile landscape layout */
+@media (max-width: 1024px) and (orientation: landscape) {
+  .container {
+    grid-template-columns: 0.5fr 1.5fr;
+  }
+  
+  .Sidebar {
+    grid-template-rows: 2fr;
+    grid-template-areas: "Replays";
+  }
+  
+  .Sidebar .ThemeToggle,
+  .Sidebar .ImportButtons {
+    display: none !important;
+  }
+  
+  .Replays {
+    grid-template-rows: 1fr;
+    grid-template-areas: "Picker";
+  }
+  
+  .Replays .ControlsContainer {
+    display: none !important;
+  }
+  
+  /* Mobile landscape picker styling */
+  .Replays .Picker {
+    padding: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Hide bug tagging button on mobile landscape */
+  .Replays .Picker button[title*="bugged"] {
+    display: none !important;
+  }
+  
+  /* Remove padding from viewer on mobile landscape */
+  .Viewer {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  /* Ensure Tailwind classes don't override our mobile layout */
+  .lg\:block {
+    display: none !important;
+  }
+}
+
+.Viewer {
+  grid-area: Viewer;
+  overflow: hidden;
+  background-color: var(--bg-primary);
+  margin: 1.25rem;
+  border-radius: 0.5rem;
+}
+
+.Sidebar {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto 1fr auto;
+  gap: 0px 0px;
+  grid-auto-flow: row;
+  grid-template-areas:
+    "ThemeToggle"
+    "Replays"
+    "ImportButtons";
+  grid-area: Sidebar;
+  background-color: var(--bg-primary);
+  border-right: 1px solid var(--border-primary);
+  overflow: hidden;
+  height: 100%;
+}
+
+.ThemeToggle {
+  grid-area: ThemeToggle;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-primary);
+  background-color: var(--bg-primary);
+}
+
+.Replays {
+  display: flex;
+  flex-direction: column;
+  grid-area: Replays;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.ControlsContainer {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: var(--bg-primary);
+  overflow-y: auto;
+}
+
+/* Custom scrollbar styling for controls container */
+.ControlsContainer::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ControlsContainer::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ControlsContainer::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.ControlsContainer::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Firefox scrollbar styling for controls container */
+.ControlsContainer {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-primary) transparent;
+}
+
+.Picker {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  background-color: var(--bg-primary);
+  margin-left: 1rem;
+  margin-right: 1rem;
+}
+
+/* Custom scrollbar styling for the picker */
+.Picker::-webkit-scrollbar {
+  width: 8px;
+}
+
+.Picker::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.Picker::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.Picker::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Firefox scrollbar styling */
+.Picker {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-primary) transparent;
+}
+
+.ImportButtons {
+  grid-area: ImportButtons;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-top: 1px solid var(--border-primary);
+  background-color: var(--bg-primary);
+}
+
+/* Theme-aware utility classes */
+@layer utilities {
+  .bg-theme-primary {
+    background-color: var(--bg-primary);
+  }
+  
+  .bg-theme-secondary {
+    background-color: var(--bg-secondary);
+  }
+  
+  .bg-theme-tertiary {
+    background-color: var(--bg-tertiary);
+  }
+  
+  .text-theme-primary {
+    color: var(--text-primary);
+  }
+  
+  .text-theme-secondary {
+    color: var(--text-secondary);
+  }
+  
+  .text-theme-muted {
+    color: var(--text-muted);
+  }
+  
+  .border-theme-primary {
+    border-color: var(--border-primary);
+  }
+  
+  .border-theme-secondary {
+    border-color: var(--border-secondary);
+  }
+  
+  .accent-primary {
+    color: var(--accent-primary);
+  }
+  
+  .bg-accent-primary {
+    background-color: var(--accent-primary);
+  }
+  
+  .accent-secondary {
+    color: var(--accent-secondary);
+  }
+  
+  .bg-accent-secondary {
+    background-color: var(--accent-secondary);
+  }
+  
+  .success-color {
+    color: var(--success-color);
+  }
+  
+  .bg-success {
+    background-color: var(--success-color);
+  }
+  
+  /* Override solid-select borders in dark mode */
+  .dark .ss-main {
+    border: none !important;
+    border-color: transparent !important;
+  }
+  
+  .dark .ss-single-selected {
+    border: none !important;
+    border-color: transparent !important;
+  }
+  
+  .dark .ss-multi-selected {
+    border: none !important;
+    border-color: transparent !important;
+  }
+  
+  /* Override any border classes in dark mode for select components */
+  .dark .ss-main.border {
+    border: none !important;
+    border-color: transparent !important;
+  }
+  
+  .dark .ss-single-selected.border {
+    border: none !important;
+    border-color: transparent !important;
+  }
+  
+  .dark .ss-multi-selected.border {
+    border: none !important;
+    border-color: transparent !important;
+  }
+}

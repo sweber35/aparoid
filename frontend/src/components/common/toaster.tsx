@@ -11,7 +11,7 @@ function Toast(props: { actor: toast.Service }) {
   return (
     <div
       {...api().rootProps}
-      class="flex items-center gap-5 rounded border bg-slate-50 p-3"
+      class="flex items-center gap-5 rounded border border-theme-primary bg-theme-secondary p-3"
     >
       <div class="flex flex-col gap-3">
         <div {...api().titleProps}>{api().title}</div>
