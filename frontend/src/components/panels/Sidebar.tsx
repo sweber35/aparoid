@@ -10,6 +10,9 @@ import { themeStore } from "~/state/themeStore";
 export function Sidebar() {
     const [isImportModalOpen, setIsImportModalOpen] = createSignal(false);
     
+    // use a static ID since this component is only rendered once
+    const loadingSpinnerId = `loading_sidebar_static`;
+    
     async function handleFileImport(event: Event, store: any) {
         const input = event.target as HTMLInputElement;
         const file = input.files?.[0];
@@ -116,22 +119,22 @@ export function Sidebar() {
                                 <div class="flex flex-col items-center gap-4">
                                     <svg width="48" height="48" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                       <rect x="1" y="1" rx="1" width="10" height="10" fill={themeStore.isDark() ? "#00E887" : "#9CA3AF"}>
-                                        <animate id="spinner_loading1" begin="0;spinner_loading8.end" attributeName="x" dur="0.2s" values="1;13" fill="freeze" />
-                                        <animate id="spinner_loading2" begin="spinner_loading5.end" attributeName="y" dur="0.2s" values="1;13" fill="freeze" />
-                                        <animate id="spinner_loading3" begin="spinner_loading6.end" attributeName="x" dur="0.2s" values="13;1" fill="freeze" />
-                                        <animate id="spinner_loading4" begin="spinner_loading7.end" attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
+                                        <animate id={`${loadingSpinnerId}_1`} begin={`0;${loadingSpinnerId}_8.end`} attributeName="x" dur="0.2s" values="1;13" fill="freeze" />
+                                        <animate id={`${loadingSpinnerId}_2`} begin={`${loadingSpinnerId}_5.end`} attributeName="y" dur="0.2s" values="1;13" fill="freeze" />
+                                        <animate id={`${loadingSpinnerId}_3`} begin={`${loadingSpinnerId}_6.end`} attributeName="x" dur="0.2s" values="13;1" fill="freeze" />
+                                        <animate id={`${loadingSpinnerId}_4`} begin={`${loadingSpinnerId}_7.end`} attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
                                       </rect>
                                       <rect x="1" y="13" rx="1" width="10" height="10" fill={themeStore.isDark() ? "#00E887" : "#9CA3AF"}>
-                                        <animate id="spinner_loading5" begin="spinner_loading1.end" attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
-                                        <animate id="spinner_loading6" begin="spinner_loading2.end" attributeName="x" dur="0.2s" values="1;13" fill="freeze" />
-                                        <animate id="spinner_loading7" begin="spinner_loading3.end" attributeName="y" dur="0.2s" values="1;13" fill="freeze" />
-                                        <animate id="spinner_loading8" begin="spinner_loading4.end" attributeName="x" dur="0.2s" values="13;1" fill="freeze" />
+                                        <animate id={`${loadingSpinnerId}_5`} begin={`${loadingSpinnerId}_1.end`} attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
+                                        <animate id={`${loadingSpinnerId}_6`} begin={`${loadingSpinnerId}_2.end`} attributeName="x" dur="0.2s" values="1;13" fill="freeze" />
+                                        <animate id={`${loadingSpinnerId}_7`} begin={`${loadingSpinnerId}_3.end`} attributeName="y" dur="0.2s" values="1;13" fill="freeze" />
+                                        <animate id={`${loadingSpinnerId}_8`} begin={`${loadingSpinnerId}_4.end`} attributeName="x" dur="0.2s" values="13;1" fill="freeze" />
                                       </rect>
                                       <rect x="13" y="13" rx="1" width="10" height="10" fill={themeStore.isDark() ? "#00E887" : "#9CA3AF"}>
-                                        <animate id="spinner_loading9" begin="spinner_loading5.end" attributeName="x" dur="0.2s" values="13;1" fill="freeze" />
-                                        <animate id="spinner_loading10" begin="spinner_loading6.end" attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
-                                        <animate id="spinner_loading11" begin="spinner_loading7.end" attributeName="x" dur="0.2s" values="1;13" fill="freeze" />
-                                        <animate id="spinner_loading12" begin="spinner_loading8.end" attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
+                                        <animate id={`${loadingSpinnerId}_9`} begin={`${loadingSpinnerId}_5.end`} attributeName="x" dur="0.2s" values="13;1" fill="freeze" />
+                                        <animate id={`${loadingSpinnerId}_10`} begin={`${loadingSpinnerId}_6.end`} attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
+                                        <animate id={`${loadingSpinnerId}_11`} begin={`${loadingSpinnerId}_7.end`} attributeName="x" dur="0.2s" values="1;13" fill="freeze" />
+                                        <animate id={`${loadingSpinnerId}_12`} begin={`${loadingSpinnerId}_8.end`} attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
                                       </rect>
                                     </svg>
                                     <div class="text-theme-secondary">Loading replays...</div>

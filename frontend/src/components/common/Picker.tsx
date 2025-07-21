@@ -121,9 +121,7 @@ export function Picker<T>(props: {
                 <div
                   role="button"
                   class={`transition-colors duration-200 ${
-                    themeStore.isDark() 
-                      ? 'hover:bg-ultraviolet-600 hover:bg-opacity-40' 
-                      : 'hover:bg-slate-100'
+                    !themeStore.isDark() && 'hover:bg-slate-100'
                   }`}
                   style={{ 
                     ...styles.item,

@@ -220,6 +220,9 @@ export { Controls };
 function GameInfo(props: { replayStub: ReplayStub, loading?: boolean, selected?: boolean }) {
   const [bugged, setBugged] = createSignal(props.replayStub.bugged ?? false);
   const [loading, setLoading] = createSignal(false);
+  
+  // Generate unique IDs for this spinner instance
+  const spinnerId = `spinner_${Math.random().toString(36).substr(2, 9)}`;
 
   // Parse the players string to extract player tags and character IDs
   const parsePlayers = () => {
@@ -283,7 +286,7 @@ function GameInfo(props: { replayStub: ReplayStub, loading?: boolean, selected?:
     <div class={`w-full min-h-[96px] pb-4 transition-colors duration-200 ${
       !themeStore.isDark() && 'hover:bg-gray-50'
     } ${
-      themeStore.isDark() && 'hover:bg-void-400'
+      themeStore.isDark() && 'lg:hover:bg-void-400'
     } ${
       bugged() && !themeStore.isDark() ? 'bg-yellow-100' : ''
     }`} style={themeStore.isDark() ? { 'background-image': 'none' } : {}}>
@@ -306,22 +309,22 @@ function GameInfo(props: { replayStub: ReplayStub, loading?: boolean, selected?:
             <div class="ml-2 p-1 rounded text-lg">
               <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <rect x="1" y="1" rx="1" width="10" height="10" fill={themeStore.isDark() ? "#00E887" : "#9CA3AF"}>
-                  <animate id="spinner_c7A9" begin="0;spinner_23zP.end" attributeName="x" dur="0.2s" values="1;13" fill="freeze" />
-                  <animate id="spinner_Acnw" begin="spinner_ZmWi.end" attributeName="y" dur="0.2s" values="1;13" fill="freeze" />
-                  <animate id="spinner_iIcm" begin="spinner_zfQN.end" attributeName="x" dur="0.2s" values="13;1" fill="freeze" />
-                  <animate id="spinner_WX4U" begin="spinner_rRAc.end" attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
+                  <animate id={`${spinnerId}_1`} begin={`0;${spinnerId}_8.end`} attributeName="x" dur="0.2s" values="1;13" fill="freeze" />
+                  <animate id={`${spinnerId}_2`} begin={`${spinnerId}_5.end`} attributeName="y" dur="0.2s" values="1;13" fill="freeze" />
+                  <animate id={`${spinnerId}_3`} begin={`${spinnerId}_6.end`} attributeName="x" dur="0.2s" values="13;1" fill="freeze" />
+                  <animate id={`${spinnerId}_4`} begin={`${spinnerId}_7.end`} attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
                 </rect>
                 <rect x="1" y="13" rx="1" width="10" height="10" fill={themeStore.isDark() ? "#00E887" : "#9CA3AF"}>
-                  <animate id="spinner_YLx7" begin="spinner_c7A9.end" attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
-                  <animate id="spinner_vwnJ" begin="spinner_Acnw.end" attributeName="x" dur="0.2s" values="1;13" fill="freeze" />
-                  <animate id="spinner_KQuy" begin="spinner_iIcm.end" attributeName="y" dur="0.2s" values="1;13" fill="freeze" />
-                  <animate id="spinner_arKy" begin="spinner_WX4U.end" attributeName="x" dur="0.2s" values="13;1" fill="freeze" />
+                  <animate id={`${spinnerId}_5`} begin={`${spinnerId}_1.end`} attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
+                  <animate id={`${spinnerId}_6`} begin={`${spinnerId}_2.end`} attributeName="x" dur="0.2s" values="1;13" fill="freeze" />
+                  <animate id={`${spinnerId}_7`} begin={`${spinnerId}_3.end`} attributeName="y" dur="0.2s" values="1;13" fill="freeze" />
+                  <animate id={`${spinnerId}_8`} begin={`${spinnerId}_4.end`} attributeName="x" dur="0.2s" values="13;1" fill="freeze" />
                 </rect>
                 <rect x="13" y="13" rx="1" width="10" height="10" fill={themeStore.isDark() ? "#00E887" : "#9CA3AF"}>
-                  <animate id="spinner_ZmWi" begin="spinner_YLx7.end" attributeName="x" dur="0.2s" values="13;1" fill="freeze" />
-                  <animate id="spinner_zfQN" begin="spinner_vwnJ.end" attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
-                  <animate id="spinner_rRAc" begin="spinner_KQuy.end" attributeName="x" dur="0.2s" values="1;13" fill="freeze" />
-                  <animate id="spinner_23zP" begin="spinner_arKy.end" attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
+                  <animate id={`${spinnerId}_9`} begin={`${spinnerId}_5.end`} attributeName="x" dur="0.2s" values="13;1" fill="freeze" />
+                  <animate id={`${spinnerId}_10`} begin={`${spinnerId}_6.end`} attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
+                  <animate id={`${spinnerId}_11`} begin={`${spinnerId}_7.end`} attributeName="x" dur="0.2s" values="1;13" fill="freeze" />
+                  <animate id={`${spinnerId}_12`} begin={`${spinnerId}_8.end`} attributeName="y" dur="0.2s" values="13;1" fill="freeze" />
                 </rect>
               </svg>
             </div>
