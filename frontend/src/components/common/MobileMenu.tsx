@@ -15,7 +15,7 @@ export function MobileMenu(props: MobileMenuProps) {
       <div class="lg:hidden fixed top-4 left-4 z-50">
         <button
           onClick={() => setIsOpen(!isOpen())}
-          class={`p-2 rounded-lg transition-colors duration-200 ${
+          class={`p-2 rounded-lg transition-colors duration-200 opacity-60 hover:opacity-100 ${
             themeStore.isDark() 
               ? 'bg-void-500 hover:bg-void-400 text-white' 
               : 'bg-theme-secondary hover:bg-theme-tertiary text-theme-primary'
