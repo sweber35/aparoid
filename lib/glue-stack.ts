@@ -101,6 +101,32 @@ export class GlueStack extends cdk.Stack {
     );
     lookupTable.addDependency(this.glueDb);
 
+    // Add attacks table
+    const attacksSchema = loadGlueSchema('schemas/glue/attacks-schema.json');
+    const attacksTable = createGlueTableWithLocation(
+      this,
+      'aparoid-attacks-table',
+      attacksSchema,
+      this.glueDb.ref,
+      `s3://${props.processedDataBucketName}`,
+      'attacks',
+      'parquet'  // Note: attacks are output as Parquet from slippc
+    );
+    attacksTable.addDependency(this.glueDb);
+
+    // Add punishes table
+    const punishesSchema = loadGlueSchema('schemas/glue/punishes-schema.json');
+    const punishesTable = createGlueTableWithLocation(
+      this,
+      'aparoid-punishes-table',
+      punishesSchema,
+      this.glueDb.ref,
+      `s3://${props.processedDataBucketName}`,
+      'punishes',
+      'parquet'  // Note: punishes are output as Parquet from slippc
+    );
+    punishesTable.addDependency(this.glueDb);
+
     // Remove all code related to Glue/Athena view creation, Lambda, and custom resource
     // Only keep Glue tables and database logic
 

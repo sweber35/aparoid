@@ -1,0 +1,77 @@
+{
+  "name": "attacks",
+  "description": "Attack data from SLP replay files - individual moves that connected",
+  "columns": [
+    {
+      "name": "match_id",
+      "type": "string",
+      "comment": "Unique identifier for the match"
+    },
+    {
+      "name": "player_id",
+      "type": "string",
+      "comment": "Player identifier (tag code)"
+    },
+    {
+      "name": "attack_id",
+      "type": "smallint",
+      "comment": "Sequential attack identifier for this player"
+    },
+    {
+      "name": "move_id",
+      "type": "smallint",
+      "comment": "ID of the move that hit"
+    },
+    {
+      "name": "move_name",
+      "type": "string",
+      "comment": "Short name of the move that hit"
+    },
+    {
+      "name": "frame",
+      "type": "int",
+      "comment": "Frame the move connected (0 == internal frame -123)"
+    },
+    {
+      "name": "punish_id",
+      "type": "tinyint",
+      "comment": "Index of the punish this move is a part of (one punish per opening)"
+    },
+    {
+      "name": "cancel_type",
+      "type": "tinyint",
+      "comment": "How the move was canceled (as applicable)"
+    },
+    {
+      "name": "cancel_name",
+      "type": "string",
+      "comment": "Short name of the cancel type"
+    },
+    {
+      "name": "hit_id",
+      "type": "tinyint",
+      "comment": "Index of the hit number for the current move (applies only to multihits)"
+    },
+    {
+      "name": "anim_frame",
+      "type": "int",
+      "comment": "Animation frame when the move hit"
+    },
+    {
+      "name": "damage",
+      "type": "float",
+      "comment": "Damage dealt by the move"
+    },
+    {
+      "name": "opening",
+      "type": "tinyint",
+      "comment": "Opening type for first hit of punish"
+    },
+    {
+      "name": "kill_dir",
+      "type": "string",
+      "comment": "Direction of kill, as specified in Dir enum (-1 = didn't kill)"
+    }
+  ],
+  "partitionKeys": []
+} 

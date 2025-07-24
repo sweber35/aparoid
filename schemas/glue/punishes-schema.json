@@ -1,0 +1,57 @@
+{
+  "name": "punishes",
+  "description": "Punish data from SLP replay files - sequences of connected moves",
+  "columns": [
+    {
+      "name": "match_id",
+      "type": "string",
+      "comment": "Unique identifier for the match"
+    },
+    {
+      "name": "player_id",
+      "type": "string",
+      "comment": "Player identifier (tag code)"
+    },
+    {
+      "name": "start_frame",
+      "type": "int",
+      "comment": "First frame of punish (0 == internal frame -123)"
+    },
+    {
+      "name": "end_frame",
+      "type": "int",
+      "comment": "Last frame of punish (0 == internal frame -123)"
+    },
+    {
+      "name": "start_pct",
+      "type": "float",
+      "comment": "Opponent's damage on first frame of punish"
+    },
+    {
+      "name": "end_pct",
+      "type": "float",
+      "comment": "Opponent's damage on last frame of punish"
+    },
+    {
+      "name": "stocks",
+      "type": "tinyint",
+      "comment": "Opponent's stocks on first frame of punish"
+    },
+    {
+      "name": "num_moves",
+      "type": "smallint",
+      "comment": "Number of moves (hitboxes connected) in the current punish"
+    },
+    {
+      "name": "last_move_id",
+      "type": "smallint",
+      "comment": "ID of the last move that hit"
+    },
+    {
+      "name": "kill_dir",
+      "type": "string",
+      "comment": "Direction of kill, as specified in Dir enum (-1 = didn't kill)"
+    }
+  ],
+  "partitionKeys": []
+} 

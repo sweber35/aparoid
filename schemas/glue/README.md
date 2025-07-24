@@ -81,6 +81,12 @@ const table = createGlueTableWithLocation(
 
 - `frames-schema.json` - Frame-by-frame player data from SLP replay files (Parquet)
 - `items-schema.json` - Frame-by-frame item data from SLP replay files (Parquet)
+- `platforms-schema.json` - Frame-by-frame FoD platform height data from SLP replay files (Parquet)
+- `attacks-schema.json` - Attack data from SLP replay files - individual moves that connected (Parquet)
+- `punishes-schema.json` - Punish data from SLP replay files - sequences of connected moves (Parquet)
+- `match-settings-schema.json` - Match settings data from SLP replay files (JSON)
+- `player-settings-schema.json` - Player settings data from SLP replay files (JSON)
+- `lookup-schema.json` - Lookup data for various game elements (JSON)
 
 ## Data Types
 
