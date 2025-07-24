@@ -27,6 +27,8 @@ function getCharacterPortraitFilename(characterName: string): string {
 const categoryOptions = [
     { value: "Ledge Dashes", label: "Ledge Dashes" },
     { value: "Shine Grabs", label: "Shine Grabs" },
+    { value: "Combos (Length)", label: "Combos (Length)" },
+    { value: "Combos (Percent)", label: "Combos (Percent)" },
 ];
 
 const stageOptions = [
@@ -354,6 +356,34 @@ function GameInfo(props: { replayStub: ReplayStub, loading?: boolean, selected?:
           )}
         </div>
       </div>
+      
+      {/* Combo information */}
+      <Show when={props.replayStub.numMoves !== undefined || props.replayStub.damageDealt !== undefined}>
+        <div class="px-3 mb-2">
+          <div class="flex items-center gap-4 text-sm">
+            <Show when={props.replayStub.numMoves !== undefined}>
+              <div class="flex items-center gap-1">
+                <span class="text-theme-secondary">Moves:</span>
+                <span class="font-medium text-theme-primary">{props.replayStub.numMoves}</span>
+              </div>
+            </Show>
+            <Show when={props.replayStub.damageDealt !== undefined}>
+              <div class="flex items-center gap-1">
+                <span class="text-theme-secondary">Damage:</span>
+                <span class="font-medium text-theme-primary">{props.replayStub.damageDealt!.toFixed(1)}%</span>
+              </div>
+            </Show>
+            <Show when={props.replayStub.startPct !== undefined && props.replayStub.endPct !== undefined}>
+              <div class="flex items-center gap-1">
+                <span class="text-theme-secondary">From:</span>
+                <span class="font-medium text-theme-primary">{props.replayStub.startPct!.toFixed(1)}%</span>
+                <span class="text-theme-secondary">→</span>
+                <span class="font-medium text-theme-primary">{props.replayStub.endPct!.toFixed(1)}%</span>
+              </div>
+            </Show>
+          </div>
+        </div>
+      </Show>
       
       {/* Player information */}
       <div class="space-y-1 px-3 pb-4 mb-2">

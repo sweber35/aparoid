@@ -132,7 +132,137 @@ function generateSequenceQuery(actionDefs, bufferFrames) {
   ORDER BY matchId, frameStart;
   `.trim();
   }
+
+function generateComboQuery(comboType, matchId = null) {
+    const matchFilter = matchId ? `WHERE p.match_id = '${matchId}'` : '';
+    
+    if (comboType === 'length') {
+        // Query for longest combos by number of moves
+        return `
+  WITH combo_stats AS (
+    SELECT 
+      p.match_id,
+      p.player_id,
+      p.start_frame,
+      p.end_frame,
+      p.num_moves,
+      p.start_pct,
+      p.end_pct,
+      p.stocks,
+      ROW_NUMBER() OVER (PARTITION BY p.match_id ORDER BY p.num_moves DESC, p.start_frame ASC) as rank
+    FROM punishes p
+    ${matchFilter}
+  ),
+  
+  top_combos AS (
+    SELECT *
+    FROM combo_stats
+    WHERE rank <= 3
+  ),
+  
+  enriched_combos AS (
+    SELECT
+      ms.match_id as matchId,
+      ms.stage as stageId,
+      tc.start_frame as originalSequenceStart,
+      tc.end_frame as originalSequenceEnd,
+      CASE
+        WHEN tc.start_frame - 60 < 0 THEN 0
+        ELSE tc.start_frame - 60
+      END AS frameStart,
+      CASE
+        WHEN tc.end_frame + 30 > ms.frame_count THEN ms.frame_count
+        ELSE tc.end_frame + 30
+      END AS frameEnd,
+      tc.num_moves,
+      tc.start_pct,
+      tc.end_pct,
+      tc.stocks,
+      ARRAY_AGG(
+        JSON_OBJECT(
+          'characterId' VALUE ps.ext_char,
+          'tag' VALUE ps.player_tag,
+          'playerIndex' VALUE ps.player_index
+        )
+      ) AS players
+    FROM top_combos tc
+    JOIN match_settings ms ON tc.match_id = ms.match_id
+    JOIN player_settings ps ON tc.match_id = ps.match_id
+    GROUP BY ms.match_id, tc.start_frame, tc.end_frame, ms.stage, ms.frame_count, tc.num_moves, tc.start_pct, tc.end_pct, tc.stocks
+  )
+
+  SELECT *
+  FROM enriched_combos
+  ORDER BY matchId, num_moves DESC, frameStart;
+  `.trim();
+    } else if (comboType === 'damage') {
+        // Query for longest combos by damage dealt (minimum 40% damage)
+        return `
+  WITH combo_stats AS (
+    SELECT 
+      p.match_id,
+      p.player_id,
+      p.start_frame,
+      p.end_frame,
+      p.num_moves,
+      p.start_pct,
+      p.end_pct,
+      p.stocks,
+      (p.end_pct - p.start_pct) as damage_dealt,
+      ROW_NUMBER() OVER (PARTITION BY p.match_id ORDER BY (p.end_pct - p.start_pct) DESC, p.start_frame ASC) as rank
+    FROM punishes p
+    WHERE (p.end_pct - p.start_pct) > 40
+    ${matchFilter ? `AND ${matchFilter.replace('WHERE ', '')}` : ''}
+  ),
+  
+  top_combos AS (
+    SELECT *
+    FROM combo_stats
+    WHERE rank <= 3
+  ),
+  
+  enriched_combos AS (
+    SELECT
+      ms.match_id as matchId,
+      ms.stage as stageId,
+      tc.start_frame as originalSequenceStart,
+      tc.end_frame as originalSequenceEnd,
+      CASE
+        WHEN tc.start_frame - 60 < 0 THEN 0
+        ELSE tc.start_frame - 60
+      END AS frameStart,
+      CASE
+        WHEN tc.end_frame + 30 > ms.frame_count THEN ms.frame_count
+        ELSE tc.end_frame + 30
+      END AS frameEnd,
+      tc.num_moves,
+      tc.start_pct,
+      tc.end_pct,
+      tc.stocks,
+      tc.damage_dealt,
+      ARRAY_AGG(
+        JSON_OBJECT(
+          'characterId' VALUE ps.ext_char,
+          'tag' VALUE ps.player_tag,
+          'playerIndex' VALUE ps.player_index
+        )
+      ) AS players
+    FROM top_combos tc
+    JOIN match_settings ms ON tc.match_id = ms.match_id
+    JOIN player_settings ps ON tc.match_id = ps.match_id
+    GROUP BY ms.match_id, tc.start_frame, tc.end_frame, ms.stage, ms.frame_count, tc.num_moves, tc.start_pct, tc.end_pct, tc.stocks, tc.damage_dealt
+  )
+
+  SELECT *
+  FROM enriched_combos
+  ORDER BY matchId, damage_dealt DESC, frameStart;
+  `.trim();
+    }
+    
+    throw new Error(`Unknown combo type: ${comboType}`);
+}
   
 module.exports = {
-  generateSequenceQuery
+  generateSequenceQuery,
+  generateComboQuery
 }; 

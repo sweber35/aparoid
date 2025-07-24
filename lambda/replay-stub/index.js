@@ -16,16 +16,23 @@ const {
   GetItemCommand
 } = require('@aws-sdk/client-dynamodb');
 
-const { generateSequenceQuery } = require('./util.js');
+const { generateSequenceQuery, generateComboQuery } = require('./util.js');
   
 const dynamo = new DynamoDBClient({ region: process.env.REGION });
 const athena = new AthenaClient({ region: process.env.REGION });
 const s3 = new S3Client({ region: process.env.REGION });
 const CACHE_BUCKET = process.env.CACHE_BUCKET || 'aparoid-replay-cache';
 
-function getStubCacheKey(actions, matchId) {
-    const actionsHash = JSON.stringify(actions).replace(/[^a-zA-Z0-9]/g, '');
-    return `stubs/${actionsHash}-${matchId || 'all'}.json`;
+function getStubCacheKey(queryType, queryParams, matchId) {
+    if (queryType === 'sequence') {
+        const { actions } = queryParams;
+        const actionsHash = JSON.stringify(actions).replace(/[^a-zA-Z0-9]/g, '');
+        return `stubs/sequence/${actionsHash}-${matchId || 'all'}.json`;
+    } else if (queryType === 'combo') {
+        const { comboType } = queryParams;
+        return `stubs/combo/${comboType}-${matchId || 'all'}.json`;
+    }
+    throw new Error(`Unknown query type: ${queryType}`);
 }
 
 async function tryGetCachedStubs(key) {
@@ -127,11 +134,23 @@ exports.handler = async (event) => {
   }
 
   try {
-      const { actions, matchId } = JSON.parse(event.body);
+      const { queryType, actions, comboType, matchId } = JSON.parse(event.body);
+      console.log('queryType:', queryType);
       console.log('actions:', actions);
+      console.log('comboType:', comboType);
+
+      // Determine query parameters based on query type
+      let queryParams;
+      if (queryType === 'sequence') {
+          queryParams = { actions };
+      } else if (queryType === 'combo') {
+          queryParams = { comboType };
+      } else {
+          throw new Error(`Unknown query type: ${queryType}`);
+      }
 
       // Check cache first
-      const cacheKey = getStubCacheKey(actions, matchId);
+      const cacheKey = getStubCacheKey(queryType, queryParams, matchId);
       const cachedResults = await tryGetCachedStubs(cacheKey);
       
       if (cachedResults) {
@@ -141,7 +160,13 @@ exports.handler = async (event) => {
           (async () => {
               try {
                   console.log('Starting background query execution for cache refresh');
-                  const query = generateSequenceQuery(actions, 120);
+                  let query;
+                  if (queryType === 'sequence') {
+                      query = generateSequenceQuery(actions, 120);
+                  } else if (queryType === 'combo') {
+                      query = generateComboQuery(comboType, matchId);
+                  }
+                  
                   const results = await runAthenaQuery(query);
                   
                   const enrichedResults = await Promise.all(
@@ -173,7 +198,13 @@ exports.handler = async (event) => {
       // If no cache, run the query and wait for results
       console.log('No cache found, running fresh query');
       
-      const query = generateSequenceQuery(actions, 120);
+      let query;
+      if (queryType === 'sequence') {
+          query = generateSequenceQuery(actions, 120);
+      } else if (queryType === 'combo') {
+          query = generateComboQuery(comboType, matchId);
+      }
+      
       console.log('query:', query);
       
       // Run the query and wait for results

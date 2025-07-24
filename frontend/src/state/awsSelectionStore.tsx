@@ -8,10 +8,10 @@ export type ActionState = 'CLIFF_WAIT' | 'FALL' | 'JUMP' |
                           'AIR_DODGE' | 'IDLE' | 'SHINE_START' |
                           'SHINE_WAIT' | 'JUMP_SQUAT' | 'GRAB';
 
-export type Category = 'Ledge Dashes' | 'Shine Grabs';
+export type Category = 'Ledge Dashes' | 'Shine Grabs' | 'Combos (Length)' | 'Combos (Percent)';
 
-// Mapping from categories to action state sequences
-export const categoryToActionSequence: Record<Category, {action: ActionState, minFrames?: number, maxFrames?: number}[]> = {
+// Mapping from categories to action state sequences or combo types
+export const categoryToActionSequence: Record<Category, {action: ActionState, minFrames?: number, maxFrames?: number}[] | {comboType: string}> = {
     'Ledge Dashes': [
         { action: 'CLIFF_WAIT', minFrames: 7 },
         { action: 'FALL', minFrames: 1, maxFrames: 3 },
@@ -25,6 +25,9 @@ export const categoryToActionSequence: Record<Category, {action: ActionState, mi
         { action: 'JUMP_SQUAT', minFrames: 1, maxFrames: 8 },
         { action: 'GRAB'}
     ],
+
+    'Combos (Length)': { comboType: 'length' },
+    'Combos (Percent)': { comboType: 'damage' },
 };
 
 export type Filter = 
@@ -35,7 +38,10 @@ export async function loadStubsForActionSequence(actionSequence: {action: Action
     const res = await fetch(API_CONFIG.replayStub, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ actions: actionSequence }),
+        body: JSON.stringify({ 
+            queryType: 'sequence',
+            actions: actionSequence 
+        }),
     });
 
     const payload = await res.json();
@@ -46,7 +52,10 @@ export async function loadStubsForActionSequence(actionSequence: {action: Action
             const freshRes = await fetch(API_CONFIG.replayStub, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ actions: actionSequence }),
+                body: JSON.stringify({ 
+                    queryType: 'sequence',
+                    actions: actionSequence 
+                }),
             });
 
             const freshPayload = await freshRes.json();
@@ -65,8 +74,50 @@ export async function loadStubsForActionSequence(actionSequence: {action: Action
 }
 
 export async function loadStubsForCategory(category: Category): Promise<ReplayStub[]> {
-    const actionSequence = categoryToActionSequence[category];
-    return loadStubsForActionSequence(actionSequence);
+    const categoryConfig = categoryToActionSequence[category];
+    
+    if ('comboType' in categoryConfig) {
+        // Handle combo queries
+        const res = await fetch(API_CONFIG.replayStub, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                queryType: 'combo',
+                comboType: categoryConfig.comboType 
+            }),
+        });
+
+        const payload = await res.json();
+
+        // Start a background request to get fresh results after a short delay
+        setTimeout(async () => {
+            try {
+                const freshRes = await fetch(API_CONFIG.replayStub, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ 
+                        queryType: 'combo',
+                        comboType: categoryConfig.comboType 
+                    }),
+                });
+
+                const freshPayload = await freshRes.json();
+                
+                // Update the store with fresh results if they're different
+                const currentCat = currentCategory();
+                if (categoryStores[currentCat]) {
+                    categoryStores[currentCat].setSelectionState("stubs", freshPayload);
+                }
+            } catch (error) {
+                console.error('Background refresh failed:', error);
+            }
+        }, 2000); // Wait 2 seconds before making the background request
+
+        return payload;
+    } else {
+        // Handle sequence queries (existing logic)
+        return loadStubsForActionSequence(categoryConfig);
+    }
 }
 
 export interface SelectionState {
@@ -94,6 +145,12 @@ export interface ReplayStub {
         teamId: number;
     }[];
     bugged?: boolean;
+    // Combo-specific fields
+    numMoves?: number;
+    startPct?: number;
+    endPct?: number;
+    stocks?: number;
+    damageDealt?: number;
 }
 
 interface StubStore {
