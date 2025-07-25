@@ -76,8 +76,8 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+          # Configure git remote with token for authentication
+          git remote set-url origin https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/${{ github.repository }}
           git add lambda-layers/slippc-layer/bin/slippc
           git diff --staged --quiet || git commit -m "Update slippc binary [skip ci]"
-          git push origin HEAD:${{ github.ref }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }} 
+          git push origin HEAD:${{ github.ref }} 
