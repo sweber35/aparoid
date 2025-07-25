@@ -233,5 +233,11 @@
       "comment": "Self ground X position"
     }
   ],
-  "partitionKeys": []
+  "partitionKeys": [
+    {
+      "name": "user_id",
+      "type": "string",
+      "comment": "User ID for multi-tenant partitioning"
+    }
+  ]
 }

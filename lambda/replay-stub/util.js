@@ -1,4 +1,4 @@
-function generateSequenceQuery(actionDefs, bufferFrames) {
+function generateSequenceQuery(actionDefs, bufferFrames, userId) {
     console.log('debug:', actionDefs);
     const aliases = 'abcdefghijklmnopqrstuvwxyz'.split('').slice(0, actionDefs.length);
   
@@ -14,6 +14,9 @@ function generateSequenceQuery(actionDefs, bufferFrames) {
       if (maxFrames != null) clauses.push(`${alias}.frame_count <= ${maxFrames}`);
       return clauses.join(' AND ');
     }).join('\n    AND ');
+
+    // Add user_id filter
+    const userIdFilter = `AND f.user_id = '${userId}'`;
       
     const arrayList = `ARRAY[${aliases.map(a => `${a}.action_name`).join(', ')}]`;
     const nameList = actionDefs.map(a => `'${a.action}'`).join(', ');
@@ -40,6 +43,7 @@ function generateSequenceQuery(actionDefs, bufferFrames) {
       ) AS rn_state
     FROM frames f
     JOIN action_filter a ON f.action_post = a.action_post
+    WHERE 1=1 ${userIdFilter}
   ),
   
   grouped AS (
@@ -97,6 +101,7 @@ function generateSequenceQuery(actionDefs, bufferFrames) {
             AND f.player_id = cg.player_id
             AND f.frame_number BETWEEN cg.sequence_start AND cg.sequence_end
             AND af.action_post IS NULL
+            ${userIdFilter}
     )
   ),
 
@@ -124,6 +129,7 @@ function generateSequenceQuery(actionDefs, bufferFrames) {
     FROM valid_chains vc
     JOIN match_settings ms ON vc.match_id = ms.match_id
     JOIN player_settings ps ON vc.match_id = ps.match_id
+    WHERE ms.user_id = '${userId}' AND ps.user_id = '${userId}'
     GROUP BY ms.match_id, vc.sequence_start, vc.sequence_end, ms.stage, ms.frame_count
   )
 
@@ -133,8 +139,9 @@ function generateSequenceQuery(actionDefs, bufferFrames) {
   `.trim();
   }
 
-function generateComboQuery(comboType, matchId = null) {
+function generateComboQuery(comboType, matchId, userId) {
     const matchFilter = matchId ? `WHERE p.match_id = '${matchId}'` : '';
+    const userIdFilter = `AND p.user_id = '${userId}'`;
     
     if (comboType === 'length') {
         // Query for longest combos by number of moves
@@ -151,7 +158,7 @@ function generateComboQuery(comboType, matchId = null) {
       p.stocks,
       ROW_NUMBER() OVER (PARTITION BY p.match_id ORDER BY p.num_moves DESC, p.start_frame ASC) as rank
     FROM punishes p
-    ${matchFilter}
+    ${matchFilter} ${userIdFilter}
   ),
   
   top_combos AS (
@@ -188,6 +195,7 @@ function generateComboQuery(comboType, matchId = null) {
     FROM top_combos tc
     JOIN match_settings ms ON tc.match_id = ms.match_id
     JOIN player_settings ps ON tc.match_id = ps.match_id
+    WHERE ms.user_id = '${userId}' AND ps.user_id = '${userId}'
     GROUP BY ms.match_id, tc.start_frame, tc.end_frame, ms.stage, ms.frame_count, tc.num_moves, tc.start_pct, tc.end_pct, tc.stocks
   )
 
@@ -212,7 +220,7 @@ function generateComboQuery(comboType, matchId = null) {
       ROW_NUMBER() OVER (PARTITION BY p.match_id ORDER BY (p.end_pct - p.start_pct) DESC, p.start_frame ASC) as rank
     FROM punishes p
     WHERE (p.end_pct - p.start_pct) > 40
-    ${matchFilter ? `AND ${matchFilter.replace('WHERE ', '')}` : ''}
+    ${matchFilter ? `AND ${matchFilter.replace('WHERE ', '')}` : ''} ${userIdFilter}
   ),
   
   top_combos AS (
@@ -250,6 +258,7 @@ function generateComboQuery(comboType, matchId = null) {
     FROM top_combos tc
     JOIN match_settings ms ON tc.match_id = ms.match_id
     JOIN player_settings ps ON tc.match_id = ps.match_id
+    WHERE ms.user_id = '${userId}' AND ps.user_id = '${userId}'
     GROUP BY ms.match_id, tc.start_frame, tc.end_frame, ms.stage, ms.frame_count, tc.num_moves, tc.start_pct, tc.end_pct, tc.stocks, tc.damage_dealt
   )
 

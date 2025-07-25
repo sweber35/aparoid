@@ -1,0 +1,58 @@
+{
+  "name": "player_frames",
+  "description": "Player-specific frame data from SLP replay files",
+  "columns": [
+    {
+      "name": "match_id",
+      "type": "string",
+      "comment": "Unique match identifier"
+    },
+    {
+      "name": "frame",
+      "type": "int",
+      "comment": "Frame number in the match"
+    },
+    {
+      "name": "position_x",
+      "type": "float",
+      "comment": "Player X position"
+    },
+    {
+      "name": "position_y",
+      "type": "float",
+      "comment": "Player Y position"
+    },
+    {
+      "name": "damage",
+      "type": "float",
+      "comment": "Player damage percentage"
+    },
+    {
+      "name": "character",
+      "type": "string",
+      "comment": "Character being played"
+    },
+    {
+      "name": "state",
+      "type": "string",
+      "comment": "Player state (standing, crouching, etc.)"
+    },
+    {
+      "name": "action",
+      "type": "string",
+      "comment": "Current action being performed"
+    },
+    {
+      "name": "stocks",
+      "type": "int",
+      "comment": "Number of stocks remaining"
+    }
+  ],
+  "partitionKeys": [
+    {
+      "name": "user_id",
+      "type": "string",
+      "comment": "User ID for multi-tenant partitioning"
+    }
+  ]
+} 

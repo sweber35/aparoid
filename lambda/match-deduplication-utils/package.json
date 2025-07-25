@@ -1,0 +1,10 @@
+{
+  "name": "aparoid-match-deduplication-utils",
+  "version": "1.0.0",
+  "description": "Utility functions for match deduplication management",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.0.0",
+    "@aws-sdk/client-s3": "^3.0.0"
+  }
+} 

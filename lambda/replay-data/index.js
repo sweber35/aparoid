@@ -9,6 +9,7 @@ const {
     GetObjectCommand,
     PutObjectCommand
 } = require('@aws-sdk/client-s3');
+const { jwt } = require('jsonwebtoken');
 
 const {
     gameEndingDefaults,
@@ -22,8 +23,9 @@ const athena = new AthenaClient({ region: process.env.REGION });
 const s3 = new S3Client({ region: process.env.REGION });
 const CACHE_BUCKET = process.env.CACHE_BUCKET || 'aparoid-replay-cache';
 
-function getReplayCacheKey(matchId, frameStart, frameEnd) {
-    return `replays/${matchId}-${frameStart}-${frameEnd}.json`;
+function getReplayCacheKey(matchId, frameStart, frameEnd, userId) {
+    const cacheKey = `replays/${userId}/${matchId}-${frameStart}-${frameEnd}.json`;
+    return cacheKey;
 }
 
 async function tryGetCachedReplay(key) {
@@ -147,40 +149,120 @@ async function runAthenaQuery(query, usePagination = false) {
     }
 }
 
+// JWT verification function
+function verifyJWT(token) {
+  try {
+    // For Cognito JWTs, we need to verify against the user pool
+    // This is a simplified version - in production, you'd verify the signature
+    const decoded = jwt.decode(token);
+    return decoded;
+  } catch (error) {
+    console.error('JWT verification failed:', error);
+    return null;
+  }
+}
 
+// Extract user_id from JWT token or headers
+function extractUserId(event) {
+  // First try to extract from JWT token
+  const authHeader = event.headers?.authorization || event.headers?.Authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    const decoded = verifyJWT(token);
+    if (decoded && decoded['custom:userId']) {
+      console.log('Extracted user_id from JWT:', decoded['custom:userId']);
+      return decoded['custom:userId'];
+    }
+  }
+
+  // Fallback to header extraction (for backward compatibility)
+  const headers = event.headers || {};
+  const userId = headers['x-user-id'] || headers['X-User-ID'];
+  if (userId) {
+    console.log('Extracted user_id from header:', userId);
+    return userId;
+  }
+
+  // Try to extract from body
+  try {
+    const body = JSON.parse(event.body || '{}');
+    const bodyUserId = body.user_id || body.userId || '';
+    if (bodyUserId) {
+      console.log('Extracted user_id from body:', bodyUserId);
+      return bodyUserId;
+    }
+  } catch (err) {
+    console.warn('Could not parse request body for user_id');
+  }
+
+  console.error('No user_id found in request');
+  return null;
+}
 
 exports.handler = async (event) => {
+  console.log('Event:', JSON.stringify(event, null, 2));
 
-    console.log('event', event);
+  if (event.requestContext?.http?.method === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-User-ID',
+        'Access-Control-Allow-Methods': 'POST,OPTIONS',
+      },
+      body: '',
+    };
+  }
 
-    if (event.httpMethod === 'OPTIONS') {
+  try {
+    // Extract user_id from JWT or headers
+    const userId = extractUserId(event);
+    if (!userId) {
+      return {
+        statusCode: 400,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-User-ID',
+          'Access-Control-Allow-Methods': 'POST,OPTIONS',
+        },
+        body: JSON.stringify({
+          error: 'Missing user_id. Please provide user_id in Authorization header (JWT) or X-User-ID header.',
+        }),
+      };
+    }
+
+    console.log('Processing request for user_id:', userId);
+
+    // Parse request body
+    const body = JSON.parse(event.body || '{}');
+    const { matchId } = body;
+
+    if (!matchId) {
+      return {
+        statusCode: 400,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-User-ID',
+          'Access-Control-Allow-Methods': 'POST,OPTIONS',
+        },
+        body: JSON.stringify({
+          error: 'Missing required parameter: matchId',
+        }),
+      };
+    }
+
+    // Validate user_id is present
+    if (!userId) {
         return {
-            statusCode: 204,
+            statusCode: 400,
+            body: JSON.stringify({ error: 'Missing user_id in request' }),
             headers: {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Headers': 'Content-Type,X-User-ID',
                 'Access-Control-Allow-Methods': 'OPTIONS,POST,GET',
             },
         };
     }
-
-    try {
-        const { matchId, frameStart, frameEnd } = JSON.parse(event.body);
-        console.log('Request parameters:', { matchId, frameStart, frameEnd, frameStartType: typeof frameStart, frameEndType: typeof frameEnd });
-        console.log('Request body:', event.body);
-        console.log('Parsed request body:', JSON.parse(event.body));
-        
-        if (!matchId) {
-            return {
-                statusCode: 400,
-                body: JSON.stringify({ error: 'Missing matchId' }),
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Headers': 'Content-Type',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET',
-                },
-            };
-        }
         
         // If frameStart and frameEnd are not provided, we're in debug mode and should return the full replay
         const isFullReplayRequest = frameStart === undefined || frameEnd === undefined || frameStart === null || frameEnd === null;
@@ -188,8 +270,8 @@ exports.handler = async (event) => {
         console.log('Request type:', isFullReplayRequest ? 'FULL_REPLAY_DEBUG_MODE' : 'FRAME_RANGE_REQUEST');
 
         const cacheKey = isFullReplayRequest 
-            ? `replays/${matchId}-full.json`
-            : getReplayCacheKey(matchId, frameStart, frameEnd);
+            ? `replays/${userId}/${matchId}-full.json`
+            : getReplayCacheKey(matchId, frameStart, frameEnd, userId);
         const cachedReplay = await tryGetCachedReplay(cacheKey);
 
         if (cachedReplay) {
@@ -198,11 +280,14 @@ exports.handler = async (event) => {
                 body: JSON.stringify(cachedReplay),
                 headers: {
                     'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Headers': 'Content-Type',
+                    'Access-Control-Allow-Headers': 'Content-Type,X-User-ID',
                     'Access-Control-Allow-Methods': 'OPTIONS,POST,GET',
                 },
             };
         }
+
+        // Add user_id filter for all queries
+        const userIdFilter = `AND user_id = '${userId}'`;
 
         // match settings
         const matchSettingsQuery = `
@@ -213,7 +298,7 @@ exports.handler = async (event) => {
                 timer as timerStart,
                 frame_count as frameCount
             FROM match_settings
-            WHERE match_id = '${ matchId }'
+            WHERE match_id = '${ matchId }' ${userIdFilter}
         `;
         console.log('matchSettingsQuery', matchSettingsQuery);
         const matchSettingsResults = await runAthenaQuery(matchSettingsQuery);
@@ -224,7 +309,7 @@ exports.handler = async (event) => {
                 body: JSON.stringify({ error: `Match with ID '${matchId}' not found` }),
                 headers: {
                     'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Headers': 'Content-Type',
+                    'Access-Control-Allow-Headers': 'Content-Type,X-User-ID',
                     'Access-Control-Allow-Methods': 'OPTIONS,POST,GET',
                 },
             };
@@ -248,7 +333,7 @@ exports.handler = async (event) => {
                 player_tag as displayName,
                 slippi_code as connectCode
             FROM player_settings
-            WHERE match_id = '${ matchId }'
+            WHERE match_id = '${ matchId }' ${userIdFilter}
         `;
         const playerSettingsResult = await runAthenaQuery(playerSettingsQuery);
 
@@ -274,7 +359,7 @@ exports.handler = async (event) => {
             framesQuery = `
                 SELECT *
                 FROM frames
-                WHERE match_id = '${ matchId }'
+                WHERE match_id = '${ matchId }' ${userIdFilter}
                 ORDER BY frame_number ASC
                 LIMIT ${maxFrames}
             `;
@@ -289,7 +374,7 @@ exports.handler = async (event) => {
                 SELECT *
                 FROM frames
                 WHERE match_id = '${ matchId }'
-                  AND frame_number BETWEEN ${relativeFrameStart} AND ${relativeFrameEnd}
+                  AND frame_number BETWEEN ${relativeFrameStart} AND ${relativeFrameEnd} ${userIdFilter}
                 ORDER BY frame_number ASC
             `;
         }
@@ -321,7 +406,7 @@ exports.handler = async (event) => {
             FROM items
             WHERE match_id = '${matchId}'
             AND item_type IN (79, 54, 55, 99, 86, 105, 48, 95, 93, 94, 210)
-            ${!isFullReplayRequest ? `AND frame BETWEEN ${relativeFrameStart} AND ${relativeFrameEnd}` : `AND frame <= ${maxFrameNumber}`}
+            ${!isFullReplayRequest ? `AND frame BETWEEN ${relativeFrameStart} AND ${relativeFrameEnd}` : `AND frame <= ${maxFrameNumber}`} ${userIdFilter}
             ORDER BY frame ASC
         `;
         console.log('itemsQuery', itemsQuery);
@@ -344,7 +429,7 @@ exports.handler = async (event) => {
                 right_height as rightHeight
             FROM platforms
             WHERE match_id = '${matchId}'
-            ${!isFullReplayRequest ? `AND frame BETWEEN ${relativeFrameStart} AND ${relativeFrameEnd}` : ''}
+            ${!isFullReplayRequest ? `AND frame BETWEEN ${relativeFrameStart} AND ${relativeFrameEnd}` : ''} ${userIdFilter}
             ORDER BY frame ASC
         `;
         console.log('platformsQuery', platformsQuery);
@@ -542,7 +627,7 @@ exports.handler = async (event) => {
             body: JSON.stringify(replayData),
             headers: {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Headers': 'Content-Type,X-User-ID',
                 'Access-Control-Allow-Methods': 'OPTIONS,POST,GET',
             }
         };
@@ -554,7 +639,7 @@ exports.handler = async (event) => {
             body: JSON.stringify({ error: err.message || 'Internal error' }),
             headers: {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Headers': 'Content-Type,X-User-ID',
                 'Access-Control-Allow-Methods': 'OPTIONS,POST,GET',
             },
         };

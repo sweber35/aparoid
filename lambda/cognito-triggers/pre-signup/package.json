@@ -1,0 +1,10 @@
+{
+  "name": "aparoid-pre-signup",
+  "version": "1.0.0",
+  "description": "Cognito pre-signup trigger for Aparoid",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.0.0",
+    "uuid": "^9.0.0"
+  }
+} 

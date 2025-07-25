@@ -1,0 +1,43 @@
+{
+  "name": "player_punishes",
+  "description": "Player-specific punish data from SLP replay files",
+  "columns": [
+    {
+      "name": "match_id",
+      "type": "string",
+      "comment": "Unique match identifier"
+    },
+    {
+      "name": "start_frame",
+      "type": "int",
+      "comment": "Frame when punish started"
+    },
+    {
+      "name": "end_frame",
+      "type": "int",
+      "comment": "Frame when punish ended"
+    },
+    {
+      "name": "damage_dealt",
+      "type": "float",
+      "comment": "Total damage dealt during punish"
+    },
+    {
+      "name": "punish_type",
+      "type": "string",
+      "comment": "Type of punish (combo, edgeguard, etc.)"
+    },
+    {
+      "name": "character",
+      "type": "string",
+      "comment": "Character performing the punish"
+    }
+  ],
+  "partitionKeys": [
+    {
+      "name": "user_id",
+      "type": "string",
+      "comment": "User ID for multi-tenant partitioning"
+    }
+  ]
+} 

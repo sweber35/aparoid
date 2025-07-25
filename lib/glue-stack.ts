@@ -23,7 +23,7 @@ export class GlueStack extends cdk.Stack {
       catalogId: this.account,
       databaseInput: {
         name: `replay-data-db`,
-        description: 'Database for processed SLP data',
+        description: 'Database for processed SLP data with multi-tenant support',
         parameters: {
           'hive.metastore.database.owner': 'hadoop',
           'hive.metastore.database.owner-type': 'USER'
@@ -31,7 +31,7 @@ export class GlueStack extends cdk.Stack {
       },
     });
 
-    // Create Glue tables
+    // Create Glue tables with multi-tenant partitioning
     const framesSchema = loadGlueSchema('schemas/glue/frames-schema.json');
     const framesTable = createGlueTableWithLocation(
       this,
@@ -98,10 +98,11 @@ export class GlueStack extends cdk.Stack {
       `s3://${props.processedDataBucketName}`,
       'lookup',
       'json'
+      // No partition key for lookup table as it's shared across all users
     );
     lookupTable.addDependency(this.glueDb);
 
-    // Add attacks table
+    // Add attacks table with multi-tenant partitioning
     const attacksSchema = loadGlueSchema('schemas/glue/attacks-schema.json');
     const attacksTable = createGlueTableWithLocation(
       this,
@@ -110,11 +111,11 @@ export class GlueStack extends cdk.Stack {
       this.glueDb.ref,
       `s3://${props.processedDataBucketName}`,
       'attacks',
-      'parquet'  // Note: attacks are output as Parquet from slippc
+      'parquet'
     );
     attacksTable.addDependency(this.glueDb);
 
-    // Add punishes table
+    // Add punishes table with multi-tenant partitioning
     const punishesSchema = loadGlueSchema('schemas/glue/punishes-schema.json');
     const punishesTable = createGlueTableWithLocation(
       this,
@@ -123,7 +124,7 @@ export class GlueStack extends cdk.Stack {
       this.glueDb.ref,
       `s3://${props.processedDataBucketName}`,
       'punishes',
-      'parquet'  // Note: punishes are output as Parquet from slippc
+      'parquet'
     );
     punishesTable.addDependency(this.glueDb);
 

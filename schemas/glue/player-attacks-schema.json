@@ -1,0 +1,43 @@
+{
+  "name": "player_attacks",
+  "description": "Player-specific attack data from SLP replay files",
+  "columns": [
+    {
+      "name": "match_id",
+      "type": "string",
+      "comment": "Unique match identifier"
+    },
+    {
+      "name": "frame",
+      "type": "int",
+      "comment": "Frame when attack occurred"
+    },
+    {
+      "name": "attack_type",
+      "type": "string",
+      "comment": "Type of attack performed"
+    },
+    {
+      "name": "damage_dealt",
+      "type": "float",
+      "comment": "Damage dealt by this attack"
+    },
+    {
+      "name": "hit_opponent",
+      "type": "boolean",
+      "comment": "Whether attack hit the opponent"
+    },
+    {
+      "name": "character",
+      "type": "string",
+      "comment": "Character performing the attack"
+    }
+  ],
+  "partitionKeys": [
+    {
+      "name": "user_id",
+      "type": "string",
+      "comment": "User ID for multi-tenant partitioning"
+    }
+  ]
+} 

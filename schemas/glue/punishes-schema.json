@@ -53,5 +53,11 @@
       "comment": "Direction of kill, as specified in Dir enum (-1 = didn't kill)"
     }
   ],
-  "partitionKeys": []
+  "partitionKeys": [
+    {
+      "name": "user_id",
+      "type": "string",
+      "comment": "User ID for multi-tenant partitioning"
+    }
+  ]
 } 

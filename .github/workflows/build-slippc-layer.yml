@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - feature/data-consistency
+      - feature/multi-user-tenancy
     paths:
       - 'slp-parser/**'
       - 'lambda-layers/slippc-layer/**'

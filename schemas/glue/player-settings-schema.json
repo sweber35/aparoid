@@ -33,5 +33,11 @@
       "comment": "External character ID of player"
     }
   ],
-  "partitionKeys": []
+  "partitionKeys": [
+    {
+      "name": "user_id",
+      "type": "string",
+      "comment": "User ID for multi-tenant partitioning"
+    }
+  ]
 }

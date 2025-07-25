@@ -3,6 +3,7 @@ import { Construct } from 'constructs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as iam from 'aws-cdk-lib/aws-iam';
 
 export interface StorageStackProps extends cdk.StackProps {
   // No longer need deployTestFiles prop since test files are handled separately
@@ -13,6 +14,8 @@ export class StorageStack extends cdk.Stack {
   public readonly processedSlpDataBucket: s3.Bucket;
   public readonly replayCacheBucket: s3.Bucket;
   public readonly replayTagsTable: dynamodb.Table;
+  public readonly userAccessRole: iam.Role;
+  public readonly matchDeduplicationTable: dynamodb.Table;
 
   constructor(scope: Construct, id: string, props?: StorageStackProps) {
     super(scope, id, props);
@@ -23,6 +26,8 @@ export class StorageStack extends cdk.Stack {
       versioned: false,
       removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT for production!
       autoDeleteObjects: true,
+      // Add bucket policy for multi-tenant access control
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
     });
 
     // S3 bucket for processed SLP data
@@ -31,6 +36,8 @@ export class StorageStack extends cdk.Stack {
       versioned: false,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
+      // Add bucket policy for multi-tenant access control
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
     });
 
     // S3 bucket for replay data cache
@@ -44,6 +51,8 @@ export class StorageStack extends cdk.Stack {
           expiration: cdk.Duration.days(7), // Cache expires after 7 days
         },
       ],
+      // Add bucket policy for multi-tenant access control
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
     });
 
     // Auto-populate processed data bucket with lookup data
@@ -53,14 +62,48 @@ export class StorageStack extends cdk.Stack {
       destinationKeyPrefix: 'lookup',
     });
 
-    // DynamoDB table for replay tags
+    // Create DynamoDB table for replay tags
     this.replayTagsTable = new dynamodb.Table(this, 'aparoid-replay-tags-table', {
-      tableName: `replay-tags`,
-      partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
-      sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
+      tableName: 'aparoid-replay-tags',
+      partitionKey: { name: 'match_id', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'user_id', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT for production!
+      removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT for production
     });
+
+    // Create DynamoDB table for match deduplication
+    this.matchDeduplicationTable = new dynamodb.Table(this, 'aparoid-match-deduplication-table', {
+      tableName: 'aparoid-match-deduplication',
+      partitionKey: { name: 'match_id', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT for production
+    });
+
+    // Add GSI for processing status lookups
+    this.matchDeduplicationTable.addGlobalSecondaryIndex({
+      indexName: 'processing-status-index',
+      partitionKey: { name: 'processing_status', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'created_at', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    // Add GSI for user access tracking
+    this.matchDeduplicationTable.addGlobalSecondaryIndex({
+      indexName: 'user-access-index',
+      partitionKey: { name: 'user_id', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'match_id', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    // Create IAM role for user access to their data
+    this.userAccessRole = new iam.Role(this, 'aparoid-user-access-role', {
+      roleName: 'aparoid-user-access-role',
+      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+      description: 'Role for users to access their own data in Aparoid',
+    });
+
+    // Add bucket policies for multi-tenant access control
+    this.addMultiTenantBucketPolicies();
 
     // Output the bucket names for cross-stack references
     new cdk.CfnOutput(this, 'SlpReplayBucketName', {
@@ -81,11 +124,109 @@ export class StorageStack extends cdk.Stack {
       exportName: `${this.stackName}-ReplayCacheBucketName`,
     });
 
-    // Output the table name for cross-stack references
+    // Output the table name for other stacks to use
     new cdk.CfnOutput(this, 'ReplayTagsTableName', {
       value: this.replayTagsTable.tableName,
-      description: 'Name of the DynamoDB table for replay tags',
+      description: 'Name of the replay tags DynamoDB table',
       exportName: `${this.stackName}-ReplayTagsTableName`,
     });
+
+    new cdk.CfnOutput(this, 'MatchDeduplicationTableName', {
+      value: this.matchDeduplicationTable.tableName,
+      description: 'Name of the match deduplication DynamoDB table',
+      exportName: `${this.stackName}-MatchDeduplicationTableName`,
+    });
+
+    // Output the user access role ARN
+    new cdk.CfnOutput(this, 'UserAccessRoleArn', {
+      value: this.userAccessRole.roleArn,
+      description: 'ARN of the IAM role for user data access',
+      exportName: `${this.stackName}-UserAccessRoleArn`,
+    });
+  }
+
+  private addMultiTenantBucketPolicies() {
+    // Policy for SLP replay bucket - users can only access their own user_id folder
+    this.slpReplayBucket.addToResourcePolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      principals: [this.userAccessRole],
+      actions: [
+        's3:GetObject',
+        's3:PutObject',
+        's3:DeleteObject',
+        's3:ListBucket',
+      ],
+      resources: [
+        this.slpReplayBucket.bucketArn,
+        `${this.slpReplayBucket.bucketArn}/*`,
+      ],
+      conditions: {
+        'StringEquals': {
+          'aws:PrincipalTag/user_id': '${aws:PrincipalTag/user_id}',
+        },
+        'StringLike': {
+          's3:prefix': '${aws:PrincipalTag/user_id}/*',
+        },
+      },
+    }));
+
+    // Policy for processed data bucket - users can only access their own user_id partitions
+    this.processedSlpDataBucket.addToResourcePolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      principals: [this.userAccessRole],
+      actions: [
+        's3:GetObject',
+        's3:PutObject',
+        's3:DeleteObject',
+        's3:ListBucket',
+      ],
+      resources: [
+        this.processedSlpDataBucket.bucketArn,
+        `${this.processedSlpDataBucket.bucketArn}/*`,
+      ],
+      conditions: {
+        'StringEquals': {
+          'aws:PrincipalTag/user_id': '${aws:PrincipalTag/user_id}',
+        },
+        'StringLike': {
+          's3:prefix': [
+            'frames/user_id=${aws:PrincipalTag/user_id}/*',
+            'items/user_id=${aws:PrincipalTag/user_id}/*',
+            'attacks/user_id=${aws:PrincipalTag/user_id}/*',
+            'punishes/user_id=${aws:PrincipalTag/user_id}/*',
+            'match-settings/user_id=${aws:PrincipalTag/user_id}/*',
+            'player-settings/user_id=${aws:PrincipalTag/user_id}/*',
+            'platforms/user_id=${aws:PrincipalTag/user_id}/*',
+          ],
+        },
+      },
+    }));
+
+    // Policy for cache bucket - users can only access their own cache entries
+    this.replayCacheBucket.addToResourcePolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      principals: [this.userAccessRole],
+      actions: [
+        's3:GetObject',
+        's3:PutObject',
+        's3:DeleteObject',
+        's3:ListBucket',
+      ],
+      resources: [
+        this.replayCacheBucket.bucketArn,
+        `${this.replayCacheBucket.bucketArn}/*`,
+      ],
+      conditions: {
+        'StringEquals': {
+          'aws:PrincipalTag/user_id': '${aws:PrincipalTag/user_id}',
+        },
+        'StringLike': {
+          's3:prefix': [
+            'stubs/*/${aws:PrincipalTag/user_id}/*',
+            'replays/${aws:PrincipalTag/user_id}/*',
+          ],
+        },
+      },
+    }));
   }
 } 

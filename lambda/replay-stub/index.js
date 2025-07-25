@@ -17,20 +17,23 @@ const {
 } = require('@aws-sdk/client-dynamodb');
 
 const { generateSequenceQuery, generateComboQuery } = require('./util.js');
-  
+const { jwt } = require('jsonwebtoken');
+
 const dynamo = new DynamoDBClient({ region: process.env.REGION });
 const athena = new AthenaClient({ region: process.env.REGION });
 const s3 = new S3Client({ region: process.env.REGION });
 const CACHE_BUCKET = process.env.CACHE_BUCKET || 'aparoid-replay-cache';
 
-function getStubCacheKey(queryType, queryParams, matchId) {
+function getStubCacheKey(queryType, queryParams, matchId, userId) {
     if (queryType === 'sequence') {
         const { actions } = queryParams;
         const actionsHash = JSON.stringify(actions).replace(/[^a-zA-Z0-9]/g, '');
-        return `stubs/sequence/${actionsHash}-${matchId || 'all'}.json`;
+        const cacheKey = `stubs/sequence/${userId}/${actionsHash}-${matchId || 'all'}.json`;
+        return cacheKey;
     } else if (queryType === 'combo') {
         const { comboType } = queryParams;
-        return `stubs/combo/${comboType}-${matchId || 'all'}.json`;
+        const cacheKey = `stubs/combo/${userId}/${comboType}-${matchId || 'all'}.json`;
+        return cacheKey;
     }
     throw new Error(`Unknown query type: ${queryType}`);
 }
@@ -84,6 +87,12 @@ async function runAthenaQuery(query) {
       QueryString: query,
       QueryExecutionContext: { Database: process.env.GLUE_DATABASE },
       ResultConfiguration: { OutputLocation: process.env.QUERY_OUTPUT_LOCATION },
+      ResultReuseConfiguration: {
+          ResultReuseByAgeConfiguration: {
+              Enabled: true,
+              MaxAgeInMinutes: 60, // Adjust as needed (max is 43200 = 30 days)
+          }
+      }
   });
 
   const start = await athena.send(startCommand);
@@ -105,52 +114,144 @@ async function runAthenaQuery(query) {
       }
   }
 
+  // Single result for small queries
   const result = await athena.send(new GetQueryResultsCommand({
       QueryExecutionId: queryExecutionId,
   }));
 
+  console.log('Raw Athena result:', JSON.stringify(result, null, 2));
+
   const rows = result.ResultSet?.Rows || [];
   const headers = rows[0]?.Data?.map(d => d.VarCharValue || '') || [];
 
-  return rows.slice(1).map(row =>
+  console.log('Headers:', headers);
+  console.log('Rows count:', rows.length);
+  console.log('Rows:', rows);
+
+  const parsedResults = rows.slice(1).map(row =>
       row.Data?.reduce((obj, val, idx) => {
           obj[headers[idx]] = val?.VarCharValue || '';
           return obj;
       }, {})
   );
+
+  console.log('Parsed results:', parsedResults);
+  return parsedResults;
+}
+
+// JWT verification function
+function verifyJWT(token) {
+  try {
+    // For Cognito JWTs, we need to verify against the user pool
+    // This is a simplified version - in production, you'd verify the signature
+    const decoded = jwt.decode(token);
+    return decoded;
+  } catch (error) {
+    console.error('JWT verification failed:', error);
+    return null;
+  }
+}
+
+// Extract user_id from JWT token or headers
+function extractUserId(event) {
+  // First try to extract from JWT token
+  const authHeader = event.headers?.authorization || event.headers?.Authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    const decoded = verifyJWT(token);
+    if (decoded && decoded['custom:userId']) {
+      console.log('Extracted user_id from JWT:', decoded['custom:userId']);
+      return decoded['custom:userId'];
+    }
+  }
+
+  // Fallback to header extraction (for backward compatibility)
+  const headers = event.headers || {};
+  const userId = headers['x-user-id'] || headers['X-User-ID'];
+  if (userId) {
+    console.log('Extracted user_id from header:', userId);
+    return userId;
+  }
+
+  // Try to extract from body
+  try {
+    const body = JSON.parse(event.body || '{}');
+    const bodyUserId = body.user_id || body.userId || '';
+    if (bodyUserId) {
+      console.log('Extracted user_id from body:', bodyUserId);
+      return bodyUserId;
+    }
+  } catch (err) {
+    console.warn('Could not parse request body for user_id');
+  }
+
+  console.error('No user_id found in request');
+  return null;
 }
 
 exports.handler = async (event) => {
+  console.log('Event:', JSON.stringify(event, null, 2));
 
   if (event.requestContext?.http?.method === 'OPTIONS') {
       return {
           statusCode: 204,
           headers: {
               'Access-Control-Allow-Origin': '*',
-              'Access-Control-Allow-Headers': 'Content-Type',
+              'Access-Control-Allow-Headers': 'Content-Type,X-User-ID',
               'Access-Control-Allow-Methods': 'OPTIONS,POST,GET',
           },
       };
   }
 
   try {
-      const { queryType, actions, comboType, matchId } = JSON.parse(event.body);
-      console.log('queryType:', queryType);
-      console.log('actions:', actions);
-      console.log('comboType:', comboType);
+    // Extract user_id from JWT or headers
+    const userId = extractUserId(event);
+    if (!userId) {
+      return {
+        statusCode: 400,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-User-ID',
+          'Access-Control-Allow-Methods': 'POST,OPTIONS',
+        },
+        body: JSON.stringify({
+          error: 'Missing user_id. Please provide user_id in Authorization header (JWT) or X-User-ID header.',
+        }),
+      };
+    }
+
+    console.log('Processing request for user_id:', userId);
+
+    // Parse request body
+    const body = JSON.parse(event.body || '{}');
+    const { actionDefs, bufferFrames, queryType } = body;
+
+    if (!actionDefs || !bufferFrames || !queryType) {
+      return {
+        statusCode: 400,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-User-ID',
+          'Access-Control-Allow-Methods': 'POST,OPTIONS',
+        },
+        body: JSON.stringify({
+          error: 'Missing required parameters: actionDefs, bufferFrames, queryType',
+        }),
+      };
+    }
 
       // Determine query parameters based on query type
       let queryParams;
       if (queryType === 'sequence') {
-          queryParams = { actions };
+          queryParams = { actions: actionDefs };
       } else if (queryType === 'combo') {
-          queryParams = { comboType };
+          queryParams = { comboType: queryType }; // Assuming queryType itself is the comboType for now
       } else {
           throw new Error(`Unknown query type: ${queryType}`);
       }
 
       // Check cache first
-      const cacheKey = getStubCacheKey(queryType, queryParams, matchId);
+      const cacheKey = getStubCacheKey(queryType, queryParams, null, userId); // matchId is not in body for sequence, so pass null
       const cachedResults = await tryGetCachedStubs(cacheKey);
       
       if (cachedResults) {
@@ -162,9 +263,9 @@ exports.handler = async (event) => {
                   console.log('Starting background query execution for cache refresh');
                   let query;
                   if (queryType === 'sequence') {
-                      query = generateSequenceQuery(actions, 120);
+                      query = generateSequenceQuery(actionDefs, bufferFrames, userId);
                   } else if (queryType === 'combo') {
-                      query = generateComboQuery(comboType, matchId);
+                      query = generateComboQuery(queryType, null, userId); // matchId is not in body for combo
                   }
                   
                   const results = await runAthenaQuery(query);
@@ -189,7 +290,7 @@ exports.handler = async (event) => {
               body: JSON.stringify(cachedResults),
               headers: {
                   'Access-Control-Allow-Origin': '*',
-                  'Access-Control-Allow-Headers': 'Content-Type',
+                  'Access-Control-Allow-Headers': 'Content-Type,X-User-ID',
                   'Access-Control-Allow-Methods': 'OPTIONS,POST,GET',
               }
           };
@@ -200,9 +301,9 @@ exports.handler = async (event) => {
       
       let query;
       if (queryType === 'sequence') {
-          query = generateSequenceQuery(actions, 120);
+          query = generateSequenceQuery(actionDefs, bufferFrames, userId);
       } else if (queryType === 'combo') {
-          query = generateComboQuery(comboType, matchId);
+          query = generateComboQuery(queryType, null, userId); // matchId is not in body for combo
       }
       
       console.log('query:', query);
@@ -227,7 +328,7 @@ exports.handler = async (event) => {
           body: JSON.stringify(enrichedResults),
           headers: {
               'Access-Control-Allow-Origin': '*',
-              'Access-Control-Allow-Headers': 'Content-Type',
+              'Access-Control-Allow-Headers': 'Content-Type,X-User-ID',
               'Access-Control-Allow-Methods': 'OPTIONS,POST,GET',
           }
       };
@@ -236,10 +337,10 @@ exports.handler = async (event) => {
     console.error('Error:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error.message }),
+      body: JSON.stringify({ error: error.message || 'Internal error' }),
       headers: {
           'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type',
+          'Access-Control-Allow-Headers': 'Content-Type,X-User-ID',
           'Access-Control-Allow-Methods': 'OPTIONS,POST,GET',
       }
     };

@@ -7,14 +7,18 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
+import * as cognito from 'aws-cdk-lib/aws-cognito';
 
 export interface ProcessingStackProps extends cdk.StackProps {
   slpReplayBucketName: string;
   processedDataBucketName: string;
   replayCacheBucketName: string;
   tagTableName: string;
+  matchDeduplicationTableName: string; // Add deduplication table name
   glueDatabaseName: string;
   athenaOutputLocation: string;
+  userAccessRoleArn?: string; // Optional: ARN of user access role for multi-tenancy
+  userPool?: cognito.UserPool; // Optional: Cognito User Pool for JWT authorization
 }
 
 export class ProcessingStack extends cdk.Stack {
@@ -57,6 +61,11 @@ export class ProcessingStack extends cdk.Stack {
       props.replayCacheBucketName
     );
 
+    // Import user access role if provided
+    const userAccessRole = props.userAccessRoleArn 
+      ? iam.Role.fromRoleArn(this, 'aparoid-user-access-role', props.userAccessRoleArn)
+      : undefined;
+
     // Slippc Lambda layer
     const slippcLayer = new lambda.LayerVersion(this, 'aparoid-slippc-layer', {
       layerVersionName: `aparoid-slippc-layer`,
@@ -93,22 +102,21 @@ export class ProcessingStack extends cdk.Stack {
       retention: logs.RetentionDays.ONE_WEEK,
     });
 
-    // SLP to Parquet Lambda function
+    // SLP to Parquet Lambda
     this.slpToParquetLambda = new lambda.Function(this, 'aparoid-slp-to-parquet-lambda', {
-      functionName: `aparoid-slp-to-parquet`,
+      functionName: 'aparoid-slp-to-parquet',
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
       code: lambda.Code.fromAsset('lambda/slp-to-parquet'),
-      layers: [slippcLayer],
+      layers: [slippcLayer], // Add slippc layer back
       environment: {
-        SLIPPI_CODE: process.env.SLIPPI_CODE || '',
-        SLIPPI_USER_ID: process.env.SLIPPI_USER_ID || '',
-        DEPLOYMENT_REGION: this.region,
         PROCESSED_DATA_BUCKET: props.processedDataBucketName,
+        DEPLOYMENT_REGION: this.region,
+        MATCH_DEDUPLICATION_TABLE: props.matchDeduplicationTableName, // Add deduplication table
       },
-      timeout: cdk.Duration.minutes(1),
-      memorySize: 256,
-      logGroup: slpToParquetLogGroup, // Use the explicit log group
+      timeout: cdk.Duration.minutes(15),
+      memorySize: 1024,
+      logGroup: slpToParquetLogGroup,
     });
 
     // Replay Stub Lambda function
@@ -161,38 +169,81 @@ export class ProcessingStack extends cdk.Stack {
       logGroup: replayTagLogGroup, // Use the explicit log group
     });
 
+    // Create JWT authorizer if userPool is provided
+    let authorizer: apigateway.CognitoUserPoolsAuthorizer | undefined;
+    if (props.userPool) {
+      authorizer = new apigateway.CognitoUserPoolsAuthorizer(this, 'aparoid-authorizer', {
+        cognitoUserPools: [props.userPool],
+        authorizerName: 'aparoid-jwt-authorizer',
+      });
+    }
+
     // API Gateway for Replay Stub Lambda
     this.replayStubApi = new apigateway.RestApi(this, 'aparoid-replay-stub-api', {
       restApiName: 'aparoid-replay-stub-api',
-      description: 'API Gateway for replay stub generation',
+      description: 'API Gateway for replay stub generation with JWT authentication',
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
         allowMethods: apigateway.Cors.ALL_METHODS,
-        allowHeaders: ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key'],
+        allowHeaders: authorizer 
+          ? ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key']
+          : ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key', 'X-User-ID'],
       },
     });
 
     // API Gateway for Replay Data Lambda
     this.replayDataApi = new apigateway.RestApi(this, 'aparoid-replay-data-api', {
       restApiName: 'aparoid-replay-data-api',
-      description: 'API Gateway for replay data retrieval',
+      description: 'API Gateway for replay data retrieval with JWT authentication',
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
         allowMethods: apigateway.Cors.ALL_METHODS,
-        allowHeaders: ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key'],
+        allowHeaders: authorizer 
+          ? ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key']
+          : ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key', 'X-User-ID'],
       },
     });
 
     // API Gateway for Replay Tag Lambda
     this.replayTagApi = new apigateway.RestApi(this, 'aparoid-replay-tag-api', {
       restApiName: 'aparoid-replay-tag-api',
-      description: 'API Gateway for replay tag management',
+      description: 'API Gateway for replay tag management with JWT authentication',
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
         allowMethods: apigateway.Cors.ALL_METHODS,
-        allowHeaders: ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key'],
+        allowHeaders: authorizer 
+          ? ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key']
+          : ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key', 'X-User-ID'],
       },
     });
+
+    // Add resources to API Gateway
+    const replayStubResource = this.replayStubApi.root.addResource('replay-stub');
+    const replayDataResource = this.replayDataApi.root.addResource('replay-data');
+    const replayTagResource = this.replayTagApi.root.addResource('replay-tag');
+
+    // Add methods with authorization if authorizer is available
+    if (authorizer) {
+      replayStubResource.addMethod('POST', new apigateway.LambdaIntegration(this.replayStubLambda), {
+        authorizer: authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+      });
+
+      replayDataResource.addMethod('POST', new apigateway.LambdaIntegration(this.replayDataLambda), {
+        authorizer: authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+      });
+
+      replayTagResource.addMethod('POST', new apigateway.LambdaIntegration(this.replayTagLambda), {
+        authorizer: authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+      });
+    } else {
+      // Fallback to no authorization (for backward compatibility)
+      replayStubResource.addMethod('POST', new apigateway.LambdaIntegration(this.replayStubLambda));
+      replayDataResource.addMethod('POST', new apigateway.LambdaIntegration(this.replayDataLambda));
+      replayTagResource.addMethod('POST', new apigateway.LambdaIntegration(this.replayTagLambda));
+    }
 
     // Create Lambda integrations
     const replayStubIntegration = new apigateway.LambdaIntegration(this.replayStubLambda, {
@@ -298,7 +349,15 @@ export class ProcessingStack extends cdk.Stack {
     // Grant permissions to the SLP to Parquet Lambda function
     slpReplayBucket.grantRead(this.slpToParquetLambda);
     processedSlpDataBucket.grantWrite(this.slpToParquetLambda);
-
+    
+    // Grant DynamoDB permissions for match deduplication
+    const deduplicationTable = dynamodb.Table.fromTableName(
+      this, 
+      'MatchDeduplicationTable', 
+      props.matchDeduplicationTableName
+    );
+    deduplicationTable.grantReadWriteData(this.slpToParquetLambda);
+    
     // Grant permissions to the Replay Stub Lambda function
     tagTable.grantReadData(this.replayStubLambda);
     
