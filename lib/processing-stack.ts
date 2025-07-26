@@ -169,12 +169,25 @@ export class ProcessingStack extends cdk.Stack {
       logGroup: replayTagLogGroup, // Use the explicit log group
     });
 
-    // Create JWT authorizer if userPool is provided
-    let authorizer: apigateway.CognitoUserPoolsAuthorizer | undefined;
+    // Create JWT authorizers if userPool is provided
+    let replayStubAuthorizer: apigateway.CognitoUserPoolsAuthorizer | undefined;
+    let replayDataAuthorizer: apigateway.CognitoUserPoolsAuthorizer | undefined;
+    let replayTagAuthorizer: apigateway.CognitoUserPoolsAuthorizer | undefined;
+    
     if (props.userPool) {
-      authorizer = new apigateway.CognitoUserPoolsAuthorizer(this, 'aparoid-authorizer', {
+      replayStubAuthorizer = new apigateway.CognitoUserPoolsAuthorizer(this, 'aparoid-replay-stub-authorizer', {
         cognitoUserPools: [props.userPool],
-        authorizerName: 'aparoid-jwt-authorizer',
+        authorizerName: 'aparoid-replay-stub-jwt-authorizer',
+      });
+      
+      replayDataAuthorizer = new apigateway.CognitoUserPoolsAuthorizer(this, 'aparoid-replay-data-authorizer', {
+        cognitoUserPools: [props.userPool],
+        authorizerName: 'aparoid-replay-data-jwt-authorizer',
+      });
+      
+      replayTagAuthorizer = new apigateway.CognitoUserPoolsAuthorizer(this, 'aparoid-replay-tag-authorizer', {
+        cognitoUserPools: [props.userPool],
+        authorizerName: 'aparoid-replay-tag-jwt-authorizer',
       });
     }
 
@@ -185,7 +198,7 @@ export class ProcessingStack extends cdk.Stack {
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
         allowMethods: apigateway.Cors.ALL_METHODS,
-        allowHeaders: authorizer 
+        allowHeaders: replayStubAuthorizer 
           ? ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key']
           : ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key', 'X-User-ID'],
       },
@@ -198,7 +211,7 @@ export class ProcessingStack extends cdk.Stack {
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
         allowMethods: apigateway.Cors.ALL_METHODS,
-        allowHeaders: authorizer 
+        allowHeaders: replayDataAuthorizer 
           ? ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key']
           : ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key', 'X-User-ID'],
       },
@@ -211,7 +224,7 @@ export class ProcessingStack extends cdk.Stack {
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
         allowMethods: apigateway.Cors.ALL_METHODS,
-        allowHeaders: authorizer 
+        allowHeaders: replayTagAuthorizer 
           ? ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key']
           : ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key', 'X-User-ID'],
       },
@@ -222,26 +235,34 @@ export class ProcessingStack extends cdk.Stack {
     const replayDataResource = this.replayDataApi.root.addResource('replay-data');
     const replayTagResource = this.replayTagApi.root.addResource('replay-tag');
 
-    // Add methods with authorization if authorizer is available
-    if (authorizer) {
+    // Add methods with authorization if authorizers are available
+    if (replayStubAuthorizer) {
       replayStubResource.addMethod('POST', new apigateway.LambdaIntegration(this.replayStubLambda), {
-        authorizer: authorizer,
-        authorizationType: apigateway.AuthorizationType.COGNITO,
-      });
-
-      replayDataResource.addMethod('POST', new apigateway.LambdaIntegration(this.replayDataLambda), {
-        authorizer: authorizer,
-        authorizationType: apigateway.AuthorizationType.COGNITO,
-      });
-
-      replayTagResource.addMethod('POST', new apigateway.LambdaIntegration(this.replayTagLambda), {
-        authorizer: authorizer,
+        authorizer: replayStubAuthorizer,
         authorizationType: apigateway.AuthorizationType.COGNITO,
       });
     } else {
       // Fallback to no authorization (for backward compatibility)
       replayStubResource.addMethod('POST', new apigateway.LambdaIntegration(this.replayStubLambda));
+    }
+
+    if (replayDataAuthorizer) {
+      replayDataResource.addMethod('POST', new apigateway.LambdaIntegration(this.replayDataLambda), {
+        authorizer: replayDataAuthorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+      });
+    } else {
+      // Fallback to no authorization (for backward compatibility)
       replayDataResource.addMethod('POST', new apigateway.LambdaIntegration(this.replayDataLambda));
+    }
+
+    if (replayTagAuthorizer) {
+      replayTagResource.addMethod('POST', new apigateway.LambdaIntegration(this.replayTagLambda), {
+        authorizer: replayTagAuthorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+      });
+    } else {
+      // Fallback to no authorization (for backward compatibility)
       replayTagResource.addMethod('POST', new apigateway.LambdaIntegration(this.replayTagLambda));
     }
 
