@@ -37,12 +37,12 @@ export class FrontendStack extends cdk.Stack {
       httpVersion: cloudfront.HttpVersion.HTTP2,
       
       // Add custom domain support
-      domainNames: ['aparoid.bryte.app'],
-      certificate: acm.Certificate.fromCertificateArn(
-        this,
-        'CustomDomainCertificate',
-        'arn:aws:acm:us-east-1:374010404974:certificate/cbc7e134-226c-4c40-99b5-c85032fe5b51'
-      ),
+      // domainNames: ['aparoid.bryte.app'],
+      // certificate: acm.Certificate.fromCertificateArn(
+      //   this,
+      //   'CustomDomainCertificate',
+      //   'arn:aws:acm:us-east-1:374010404974:certificate/cbc7e134-226c-4c40-99b5-c85032fe5b51'
+      // ),
   
       defaultBehavior: {
         origin: new origins.S3Origin(this.websiteBucket, {
@@ -70,6 +70,7 @@ export class FrontendStack extends cdk.Stack {
       defaultRootObject: 'index.html',
       enableLogging: true,
       logBucket: new s3.Bucket(this, 'CloudFrontLogBucket', {
+        bucketName: `${this.account}-${this.region}-aparoid-cloudfront-logs`,
         removalPolicy: cdk.RemovalPolicy.DESTROY,
         autoDeleteObjects: true,
         objectOwnership: s3.ObjectOwnership.BUCKET_OWNER_PREFERRED,

@@ -30,7 +30,7 @@ fi
 echo -e "${YELLOW}📋 Getting stack outputs...${NC}"
 
 # Get the website bucket name
-WEBSITE_BUCKET=$(AWS_PROFILE=aparoid-dev aws cloudformation describe-stacks \
+WEBSITE_BUCKET=$(aws cloudformation describe-stacks \
     --stack-name FrontendStack \
     --query 'Stacks[0].Outputs[?OutputKey==`WebsiteBucketName`].OutputValue' \
     --output text 2>/dev/null || echo "")
@@ -42,7 +42,7 @@ if [ -z "$WEBSITE_BUCKET" ]; then
 fi
 
 # Get the CloudFront distribution ID
-DISTRIBUTION_ID=$(AWS_PROFILE=aparoid-dev aws cloudformation describe-stacks \
+DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
     --stack-name FrontendStack \
     --query 'Stacks[0].Outputs[?OutputKey==`DistributionId`].OutputValue' \
     --output text 2>/dev/null || echo "")
@@ -53,17 +53,17 @@ if [ -z "$DISTRIBUTION_ID" ]; then
 fi
 
 # Get API URLs from FrontendStack outputs (which import from ProcessingStack)
-REPLAY_STUB_URL=$(AWS_PROFILE=aparoid-dev aws cloudformation describe-stacks \
+REPLAY_STUB_URL=$(aws cloudformation describe-stacks \
     --stack-name FrontendStack \
     --query 'Stacks[0].Outputs[?OutputKey==`ReplayStubApiUrl`].OutputValue' \
     --output text 2>/dev/null || echo "")
 
-REPLAY_DATA_URL=$(AWS_PROFILE=aparoid-dev aws cloudformation describe-stacks \
+REPLAY_DATA_URL=$(aws cloudformation describe-stacks \
     --stack-name FrontendStack \
     --query 'Stacks[0].Outputs[?OutputKey==`ReplayDataApiUrl`].OutputValue' \
     --output text 2>/dev/null || echo "")
 
-REPLAY_TAG_URL=$(AWS_PROFILE=aparoid-dev aws cloudformation describe-stacks \
+REPLAY_TAG_URL=$(aws cloudformation describe-stacks \
     --stack-name FrontendStack \
     --query 'Stacks[0].Outputs[?OutputKey==`ReplayTagApiUrl`].OutputValue' \
     --output text 2>/dev/null || echo "")
@@ -225,7 +225,7 @@ fi
 
 # Upload to S3
 echo -e "${YELLOW}📤 Uploading to S3...${NC}"
-AWS_PROFILE=aparoid-dev aws s3 sync dist/ s3://$WEBSITE_BUCKET/ --delete
+aws s3 sync dist/ s3://$WEBSITE_BUCKET/ --delete
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}❌ Upload failed${NC}"
@@ -236,7 +236,7 @@ echo -e "${GREEN}✅ Upload completed${NC}"
 
 # Invalidate CloudFront cache
 echo -e "${YELLOW}🔄 Invalidating CloudFront cache...${NC}"
-AWS_PROFILE=aparoid-dev aws cloudfront create-invalidation \
+aws cloudfront create-invalidation \
     --distribution-id $DISTRIBUTION_ID \
     --paths "/*"
 
@@ -248,7 +248,7 @@ fi
 echo -e "${GREEN}✅ Cache invalidation completed${NC}"
 
 # Get the CloudFront URL
-CLOUDFRONT_URL=$(AWS_PROFILE=aparoid-dev aws cloudformation describe-stacks \
+CLOUDFRONT_URL=$(aws cloudformation describe-stacks \
     --stack-name FrontendStack \
     --query 'Stacks[0].Outputs[?OutputKey==`CloudFrontUrl`].OutputValue' \
     --output text 2>/dev/null || echo "")
