@@ -396,10 +396,18 @@ exports.handler = async (event) => {
   // Extract user_id from S3 key path (first part of the path)
   const keyParts = key.split('/');
   if (keyParts.length < 2) {
-    throw new Error('Invalid S3 key format. Expected: user_id/filename.slp');
+    throw new Error('Invalid S3 key format. Expected: user_id/filename.slp or test/filename.slp');
   }
   
-  const userId = keyParts[0];
+  // Handle test files (test/filename.slp) and user files (user_id/filename.slp)
+  let userId;
+  if (keyParts[0] === 'test') {
+    // For test files, use 'test' as the user_id
+    userId = 'test';
+  } else {
+    // For user files, use the first part as user_id
+    userId = keyParts[0];
+  }
   console.log('Processing SLP file for user_id:', userId);
 
   try {
