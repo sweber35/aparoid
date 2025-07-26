@@ -147,7 +147,8 @@ export class StorageStack extends cdk.Stack {
   }
 
   private addMultiTenantBucketPolicies() {
-    // Policy for SLP replay bucket - users can only access their own user_id folder
+    // Policy for SLP replay bucket - allow the user access role to access all objects
+    // Multi-tenancy will be enforced at the application level
     this.slpReplayBucket.addToResourcePolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       principals: [this.userAccessRole],
@@ -161,17 +162,10 @@ export class StorageStack extends cdk.Stack {
         this.slpReplayBucket.bucketArn,
         `${this.slpReplayBucket.bucketArn}/*`,
       ],
-      conditions: {
-        'StringEquals': {
-          'aws:PrincipalTag/user_id': '${aws:PrincipalTag/user_id}',
-        },
-        'StringLike': {
-          's3:prefix': '${aws:PrincipalTag/user_id}/*',
-        },
-      },
     }));
 
-    // Policy for processed data bucket - users can only access their own user_id partitions
+    // Policy for processed data bucket - allow the user access role to access all objects
+    // Multi-tenancy will be enforced at the application level
     this.processedSlpDataBucket.addToResourcePolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       principals: [this.userAccessRole],
@@ -185,25 +179,10 @@ export class StorageStack extends cdk.Stack {
         this.processedSlpDataBucket.bucketArn,
         `${this.processedSlpDataBucket.bucketArn}/*`,
       ],
-      conditions: {
-        'StringEquals': {
-          'aws:PrincipalTag/user_id': '${aws:PrincipalTag/user_id}',
-        },
-        'StringLike': {
-          's3:prefix': [
-            'frames/user_id=${aws:PrincipalTag/user_id}/*',
-            'items/user_id=${aws:PrincipalTag/user_id}/*',
-            'attacks/user_id=${aws:PrincipalTag/user_id}/*',
-            'punishes/user_id=${aws:PrincipalTag/user_id}/*',
-            'match-settings/user_id=${aws:PrincipalTag/user_id}/*',
-            'player-settings/user_id=${aws:PrincipalTag/user_id}/*',
-            'platforms/user_id=${aws:PrincipalTag/user_id}/*',
-          ],
-        },
-      },
     }));
 
-    // Policy for cache bucket - users can only access their own cache entries
+    // Policy for cache bucket - allow the user access role to access all objects
+    // Multi-tenancy will be enforced at the application level
     this.replayCacheBucket.addToResourcePolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       principals: [this.userAccessRole],
@@ -217,17 +196,6 @@ export class StorageStack extends cdk.Stack {
         this.replayCacheBucket.bucketArn,
         `${this.replayCacheBucket.bucketArn}/*`,
       ],
-      conditions: {
-        'StringEquals': {
-          'aws:PrincipalTag/user_id': '${aws:PrincipalTag/user_id}',
-        },
-        'StringLike': {
-          's3:prefix': [
-            'stubs/*/${aws:PrincipalTag/user_id}/*',
-            'replays/${aws:PrincipalTag/user_id}/*',
-          ],
-        },
-      },
     }));
   }
 } 
