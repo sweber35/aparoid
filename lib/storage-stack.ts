@@ -71,6 +71,15 @@ export class StorageStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT for production
     });
 
+    // Create DynamoDB table for match deduplication
+    this.matchDeduplicationTable = new dynamodb.Table(this, 'aparoid-match-deduplication-table', {
+      tableName: `${this.account}-${this.region}-match-deduplication`,
+      partitionKey: { name: 'match_id', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'created_at', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT for production
+    });
+
     // Add GSI for processing status lookups
     this.matchDeduplicationTable.addGlobalSecondaryIndex({
       indexName: 'processing-status-index',
