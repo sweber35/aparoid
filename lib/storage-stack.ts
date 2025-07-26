@@ -22,7 +22,7 @@ export class StorageStack extends cdk.Stack {
 
     // S3 bucket for raw SLP replay files
     this.slpReplayBucket = new s3.Bucket(this, 'aparoid-slp-replays-bucket', {
-      bucketName: `aparoid-slp-replays`,
+      bucketName: `${this.account}-${this.region}-aparoid-slp-replays`,
       versioned: false,
       removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT for production!
       autoDeleteObjects: true,
@@ -32,7 +32,7 @@ export class StorageStack extends cdk.Stack {
 
     // S3 bucket for processed SLP data
     this.processedSlpDataBucket = new s3.Bucket(this, 'aparoid-processed-data-bucket', {
-      bucketName: `aparoid-processed-data`,
+      bucketName: `${this.account}-${this.region}-aparoid-processed-data`,
       versioned: false,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
@@ -42,7 +42,7 @@ export class StorageStack extends cdk.Stack {
 
     // S3 bucket for replay data cache
     this.replayCacheBucket = new s3.Bucket(this, 'aparoid-replay-cache-bucket', {
-      bucketName: `aparoid-replay-cache`,
+      bucketName: `${this.account}-${this.region}-aparoid-replay-cache`,
       versioned: false,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
@@ -64,17 +64,9 @@ export class StorageStack extends cdk.Stack {
 
     // Create DynamoDB table for replay tags
     this.replayTagsTable = new dynamodb.Table(this, 'aparoid-replay-tags-table', {
-      tableName: 'aparoid-replay-tags',
-      partitionKey: { name: 'match_id', type: dynamodb.AttributeType.STRING },
-      sortKey: { name: 'user_id', type: dynamodb.AttributeType.STRING },
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT for production
-    });
-
-    // Create DynamoDB table for match deduplication
-    this.matchDeduplicationTable = new dynamodb.Table(this, 'aparoid-match-deduplication-table', {
-      tableName: 'aparoid-match-deduplication',
-      partitionKey: { name: 'match_id', type: dynamodb.AttributeType.STRING },
+      tableName: `${this.account}-${this.region}-replay-tags`,
+      partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT for production
     });

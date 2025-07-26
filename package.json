@@ -9,10 +9,10 @@
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk",
-    "datalake": "AWS_PROFILE=aparoid-dev npx cdk deploy StorageStack GlueStack ProcessingStack TestFilesStack --require-approval never",
-    "frontend": "AWS_PROFILE=aparoid-dev npx cdk deploy FrontendStack  --require-approval never && cd frontend && ./deploy.sh",
+    "datalake": "npx cdk deploy StorageStack GlueStack ProcessingStack TestFilesStack --require-approval never",
+    "frontend": "npx cdk deploy FrontendStack  --require-approval never && cd frontend && ./deploy.sh",
     "build:slippc": "./scripts/build-slippc-layer.sh",
-    "deploy:processing": "AWS_PROFILE=aparoid-dev npx cdk deploy ProcessingStack --require-approval never"
+    "deploy:processing": "npx cdk deploy ProcessingStack --require-approval never"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",

@@ -22,8 +22,8 @@ export class GlueStack extends cdk.Stack {
     this.glueDb = new glue.CfnDatabase(this, 'aparoid-replay-data-database', {
       catalogId: this.account,
       databaseInput: {
-        name: `replay-data-db`,
-        description: 'Database for processed SLP data with multi-tenant support',
+        name: `${this.account}-${this.region}-replay-data-db`,
+        description: 'Database for processed SLP data',
         parameters: {
           'hive.metastore.database.owner': 'hadoop',
           'hive.metastore.database.owner-type': 'USER'

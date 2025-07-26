@@ -3,9 +3,9 @@
 
 // API Configuration
 export const API_CONFIG = {
-  replayStub: 'https://mjln8hcpo5.execute-api.us-east-1.amazonaws.com/prod/',
-  replayData: 'https://7htcacf9v4.execute-api.us-east-1.amazonaws.com/prod/',
-  replayTag: 'https://0pfg8h7p4d.execute-api.us-east-1.amazonaws.com/prod/',
+  replayStub: 'https://hf0o0wv0r7.execute-api.us-east-2.amazonaws.com/prod/',
+  replayData: 'https://h9yj60f07g.execute-api.us-east-2.amazonaws.com/prod/',
+  replayTag: 'https://conbuzyrp2.execute-api.us-east-2.amazonaws.com/prod/',
   timeout: 30000,
 };
 
